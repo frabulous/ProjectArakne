@@ -44,11 +44,37 @@ public class AracneAI : MonoBehaviour
 
     void LateUpdate()
     {
-        for (int i=0; i < legTargets.Length; i++)
+        //Vector3 averageLegPos = Vector3.zero;
+        float averageLegsHeight = 0f;
+        // UPDATE LEGS
+        for (int i=0; i < pairOfLegs; i++)
         {
             CheckTarget(i);
             CheckHandle(i);
+
+            CheckTarget(2*pairOfLegs-1 - i);
+            CheckHandle(2*pairOfLegs-1 - i);
+
+            //averageLegPos = (averageLegPos + (legHandles[2*pairOfLegs-1 - i].position + legHandles[i].position)*.5f)*.5f;
+            averageLegsHeight = (averageLegsHeight + (legHandles[2*pairOfLegs-1 - i].position.y + legHandles[i].position.y)*.5f)*.5f;
         }
+
+        // UPDATE BODY
+        //bodyTransform.position = averageLegPos + transform.up*bodyStartHeight;
+        Vector3 bodyPos = new Vector3(bodyTransform.position.x, averageLegsHeight + bodyStartHeight, bodyTransform.position.z);
+        //bodyTransform.position = new Vector3(bodyTransform.position.x, averageLegsHeight + bodyStartHeight, bodyTransform.position.z);
+        //Debug.DrawLine(averageLegPos + transform.up*bodyStartHeight, -transform.up*2, Color.green);
+        /*
+        RaycastHit hit;
+        if (Physics.Raycast(bodyTransform.position+castOffset, -transform.up, out hit, castOffset.y+bodyStartHeight*0.3f, whatIsGround))
+        {
+            Debug.DrawRay(bodyTransform.position+castOffset, -transform.up * hit.distance, Color.yellow);
+            Debug.Log("Body too low");
+            //bodyTransform.position = hit.point + transform.up*bodyStartHeight*.3f;
+            bodyPos = hit.point + transform.up*bodyStartHeight*.4f;
+        }
+        */
+        bodyTransform.position = bodyPos;
     }
 
     private void InitLegs()
@@ -107,6 +133,18 @@ public class AracneAI : MonoBehaviour
             leafBone = legObjs[j].GetComponentInChildren<FastIK>();
             leafBone.target = legHandles[j];
             leafBone.pole = legPoles[j];
+        }
+
+        // Put the legs in a zigzag pattern
+        Vector3 deltaZ = Vector3.forward * maxDistance*0.33f;
+        for (var i = 0; i < pairOfLegs; i++)
+        {
+            legHandles[i].Translate(deltaZ, Space.Self);
+            legPoles[i].Translate(deltaZ*0.5f, Space.Self);
+            legHandles[2*pairOfLegs-1 - i].Translate(deltaZ, Space.Self);
+            legPoles[2*pairOfLegs-1 - i].Translate(deltaZ*0.5f, Space.Self);
+
+            deltaZ *= -1;
         }
     }
 
@@ -167,6 +205,11 @@ public class AracneAI : MonoBehaviour
                 legHandles[i].position = Vector3.MoveTowards(legHandles[i].position, legTargets[i].position, Time.deltaTime*legSpeed);
             }
         }
+    }
+
+    private void CheckBody()
+    {
+
     }
 
     private void OnDrawGizmos()

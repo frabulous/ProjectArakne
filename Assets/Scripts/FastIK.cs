@@ -186,6 +186,7 @@ public class FastIK : MonoBehaviour
 
     private void OnDrawGizmos() 
     {
+        /*
         Transform temp = this.transform;
         Transform next = this.transform.parent;
         for (var i = 0; i<chainLength && temp!=null && next!=null; i++)
@@ -203,6 +204,6 @@ public class FastIK : MonoBehaviour
 
             temp = next;
             next = next.parent;
-        }
+        }*/
     }
 }
