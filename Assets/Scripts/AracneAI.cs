@@ -136,7 +136,7 @@ public class AracneAI : MonoBehaviour
         }
 
         // Put the legs in a zigzag pattern
-        Vector3 deltaZ = Vector3.forward * maxDistance*0.33f;
+        Vector3 deltaZ = Vector3.forward * legGap*0.23f;
         for (var i = 0; i < pairOfLegs; i++)
         {
             legHandles[i].Translate(deltaZ, Space.Self);
@@ -184,7 +184,7 @@ public class AracneAI : MonoBehaviour
 
         if (hasToMoveLegs[i])
         {
-            if (distanceFromLeg < 0.01f)
+            if (distanceFromLeg < 0.01f || distanceFromLeg > maxDistance*3)
             {
                 legHandles[i].position = legTargets[i].position;
                 hasToMoveLegs[i] = false;
