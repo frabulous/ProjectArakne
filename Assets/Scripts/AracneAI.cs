@@ -154,26 +154,27 @@ public class AracneAI : MonoBehaviour
         if (Physics.Raycast(legTargets[i].position+castOffset, -transform.up, out hit, castDistance, whatIsGround))
         {
             Debug.DrawRay(legTargets[i].position+castOffset, -transform.up * hit.distance, Color.yellow);
-            Debug.Log("Did Hit - downwards");
+            //Debug.Log("Did Hit - downwards");
             legTargets[i].position = hit.point;
         }
+        /*
         else if (Physics.Raycast(legTargets[i].position-castOffset, transform.up, out hit, castDistance, whatIsGround))
         {
             Debug.DrawRay(legTargets[i].position-castOffset, transform.up * hit.distance, Color.yellow);
-            Debug.Log("Did Hit - upwards");
+            //Debug.Log("Did Hit - upwards");
             legTargets[i].position = hit.point;
-        }
+        }*/
         else
         {
             Debug.DrawRay(legTargets[i].position, -transform.up * castDistance, Color.white);
-            Debug.Log("Did not Hit");
+            //Debug.Log("Did not Hit");
         }
 
     }
     void CheckHandle(int i)
     {
         float distanceFromLeg = (legTargets[i].position - legHandles[i].position).magnitude;
-//        Debug.Log("distance from leg: " + distanceFromLeg);
+        //Debug.Log("distance from leg: " + distanceFromLeg);
         Debug.DrawLine(legTargets[i].position, legHandles[i].position, Color.red);
 
         int oppositeIndex = 2*pairOfLegs-1 - i;
@@ -184,7 +185,7 @@ public class AracneAI : MonoBehaviour
 
         if (hasToMoveLegs[i])
         {
-            if (distanceFromLeg < 0.01f || distanceFromLeg > maxDistance*3)
+            if (distanceFromLeg < 0.1f || distanceFromLeg > maxDistance*3)
             {
                 legHandles[i].position = legTargets[i].position;
                 hasToMoveLegs[i] = false;

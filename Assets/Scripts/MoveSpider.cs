@@ -5,16 +5,57 @@ using UnityEngine;
 public class MoveSpider : MonoBehaviour
 {
     public float moveSpeed = 2f;
+    public Transform target;
+    public float stopDistance = 2f;
+    public float slowDistance = 10f;
 
-    // Start is called before the first frame update
     void Start()
     {
-        
+        StartCoroutine(WaitAndEnable());
+        this.enabled = false;
     }
 
-    // Update is called once per frame
     void Update()
     {
-        transform.Translate(Vector3.forward * moveSpeed * Time.deltaTime, Space.Self);
+        float speed = moveSpeed;
+        if (target)
+        {
+            //SEEK the target considering only xz plane
+            float sqrDistanceXZ = new Vector2(target.position.x - transform.position.x,
+                                    target.position.z - transform.position.z).sqrMagnitude;
+            if (sqrDistanceXZ < stopDistance*stopDistance)
+            {
+                //just stop
+                speed = 0;
+            }
+            else if (sqrDistanceXZ < slowDistance*slowDistance)
+            {
+                //slow down
+                speed = Mathf.Lerp(0.5f, moveSpeed, sqrDistanceXZ/(slowDistance*slowDistance));
+            }
+
+            transform.LookAt(new Vector3(target.position.x, transform.position.y, target.position.z));
+        }
+        //Debug.Log("speed = " + speed);
+        transform.Translate(Vector3.forward * speed * Time.deltaTime, Space.Self);
+        
+    }
+    
+    private IEnumerator WaitAndEnable()
+    {
+        yield return new WaitForSeconds(2f);
+        this.enabled = true;
+    }
+
+    private void OnDrawGizmos() {
+
+        if (target)
+        {
+            Vector3 destination = new Vector3(target.position.x, transform.position.y, target.position.z);
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(destination, slowDistance);
+            Gizmos.color = Color.red;
+            Gizmos.DrawWireSphere(destination, stopDistance);
+        }
     }
 }
