@@ -13,7 +13,7 @@ public class AracneAI : MonoBehaviour
     [SerializeField] private float handleDistance;
     [SerializeField] private Vector3 poleDelta;
 
-    private const float MIN_bodyHeight = 0.5f, MAX_bodyHeight = 4f;
+    private const float MIN_bodyHeight = 1f, MAX_bodyHeight = 4f;
     [SerializeField][Range(MIN_bodyHeight, MAX_bodyHeight)] private float bodyDefaultHeight;
     [SerializeField] private float bodyCurrHeight;
     public Transform bodyDummy;
@@ -26,6 +26,7 @@ public class AracneAI : MonoBehaviour
     [SerializeField] private float legSpeed = 20f;
 
     private float averageLegsHeight;
+    private Vector3 averageLegsPos;
     private bool[] hasToMoveLegs;
     //private bool isBodyAnimating;
     private BoxCollider bodyBox;
@@ -33,6 +34,7 @@ public class AracneAI : MonoBehaviour
     RaycastHit bodyHit;
     float viewDistance = .1f;
     private float bodyTimeout;
+    private Vector3 lastValidBodyPos;
 
     private GameObject[] legObjs;
     private Transform[] legHandles, legPoles, legTargets;
@@ -41,6 +43,7 @@ public class AracneAI : MonoBehaviour
     {
         bodyBox = bodyTransform.GetComponent<BoxCollider>();
         bodyCurrHeight = bodyTransform.localPosition.y;
+        lastValidBodyPos = bodyTransform.position + Vector3.up*bodyDefaultHeight;
         //isBodyAnimating = true;
         InitLegs();
         //bodyTransform.position += Vector3.up*bodyStartHeight;
@@ -55,12 +58,11 @@ public class AracneAI : MonoBehaviour
             //TODO: adding legs at run-time
             //InitLegs();
         }*/
-        CheckBody();
     }
 
     void LateUpdate()
     {
-        //Vector3 averageLegPos = Vector3.zero;
+        averageLegsPos = Vector3.zero;
         float averageLegsHeight_tmp = 0f;
         // UPDATE LEGS
         for (int i=0; i < pairOfLegs; i++)
@@ -71,7 +73,7 @@ public class AracneAI : MonoBehaviour
             CheckTarget(2*pairOfLegs-1 - i);
             CheckHandle(2*pairOfLegs-1 - i);
 
-            //averageLegPos = (averageLegPos + (legHandles[2*pairOfLegs-1 - i].position + legHandles[i].position)*.5f)*.5f;
+            averageLegsPos = (averageLegsPos + (legHandles[2*pairOfLegs-1 - i].position + legHandles[i].position)*.5f)*.5f;
             averageLegsHeight_tmp = (averageLegsHeight_tmp + (legHandles[2*pairOfLegs-1 - i].position.y + legHandles[i].position.y)*.5f)*.5f;
         }
         averageLegsHeight = averageLegsHeight_tmp;
@@ -81,18 +83,19 @@ public class AracneAI : MonoBehaviour
         // UPDATE BODY
         //bodyTransform.position = averageLegPos + transform.up*bodyStartHeight;
         Vector3 bodyPos = new Vector3(bodyTransform.position.x, averageLegsHeight + bodyCurrHeight, bodyTransform.position.z);
+        
         //bodyTransform.position = new Vector3(bodyTransform.position.x, averageLegsHeight + bodyStartHeight, bodyTransform.position.z);
         //Debug.DrawLine(averageLegPos + transform.up*bodyStartHeight, -transform.up*2, Color.green);
         /*
         RaycastHit hit;
-        if (Physics.Raycast(bodyTransform.position+castOffset, -transform.up, out hit, castOffset.y+bodyStartHeight*0.3f, whatIsGround))
+        if (Physics.Raycast(bodyTransform.position+castOffset, -transform.up, out hit, castOffset.y+bodyDefaultHeight*0.3f, whatIsGround))
         {
             Debug.DrawRay(bodyTransform.position+castOffset, -transform.up * hit.distance, Color.yellow);
             Debug.Log("Body too low");
             //bodyTransform.position = hit.point + transform.up*bodyStartHeight*.3f;
-            bodyPos = hit.point + transform.up*bodyStartHeight*.4f;
-        }
-        */
+            bodyPos = hit.point + transform.up*bodyDefaultHeight*.4f;
+        }*/
+        
         bodyTransform.position = bodyPos;
     }
 
@@ -233,20 +236,29 @@ public class AracneAI : MonoBehaviour
 
     private void CheckBody()
     {
-        /*if (Mathf.Abs(bodyCurrHeight - bodyDefaultHeight) > .17f && Time.time>bodyTimeout)
+        if (Mathf.Abs(bodyCurrHeight - bodyDefaultHeight) > .11f)
         {
-            //try to put the body back in position
-            Vector3 dir = bodyDefaultHeight*Vector3.up
-                            - bodyTransform.localPosition;
-            Debug.DrawRay(bodyBox.bounds.center, dir, Color.yellow, 2f);
-            willBodyHit = Physics.BoxCast(bodyBox.bounds.center, bodyBox.size*.5f, dir.normalized, out bodyHit, transform.rotation, dir.magnitude, whatIsGround);
-            if (!willBodyHit)
+            bodyTimeout -= Time.deltaTime;
+            //Debug.Log("BodyTimeout = "+ bodyTimeout);
+            if (bodyTimeout <= 0)
             {
-                bodyCurrHeight = bodyDefaultHeight;
-            Debug.Log("back in position");
+                //try to put the body back in position
+                Vector3 dir = bodyDefaultHeight*Vector3.up
+                                - bodyTransform.localPosition;
+                Debug.DrawRay(bodyBox.bounds.center, dir, Color.yellow, 2f);
+                willBodyHit = Physics.BoxCast(bodyBox.bounds.center, bodyBox.size*.5f, dir.normalized, out bodyHit, transform.rotation, dir.magnitude, whatIsGround);
+                if (!willBodyHit)
+                {
+                    bodyCurrHeight = bodyDefaultHeight;
+                    Debug.Log("Body: back in position!");
+                }
+                else
+                {
+                    bodyTimeout += Time.deltaTime;
+                    Debug.Log("Body: waiting for space...");
+                }
             }
-        }*/
-
+        }
         //cast the body collider forwards
         willBodyHit = Physics.BoxCast(bodyBox.bounds.center, bodyBox.size*.5f, transform.forward, out bodyHit, transform.rotation, viewDistance, whatIsGround);
         //willBodyHit = Physics.BoxCast(transform.position+transform.up*(bodyDefaultHeight-averageLegsY), bodyBox.size*.5f, transform.forward, out bodyHit, transform.rotation, viewDistance, whatIsGround);
@@ -262,7 +274,7 @@ public class AracneAI : MonoBehaviour
         // If here, no free space in front of the body
         Debug.Log("Hit : " + bodyHit.collider.name);
 
-        float step = .1f;
+        float step = .25f;
         float targetHeight = bodyCurrHeight - averageLegsHeight;
         bool willCollide;
 
@@ -280,7 +292,7 @@ public class AracneAI : MonoBehaviour
                 Debug.DrawLine(bodyTransform.position, bodyTransform.position-transform.up*i*step, Color.green);
                 bodyCurrHeight = targetHeight;
                 bodyDummy.localPosition = transform.up*targetHeight + transform.forward*viewDistance;
-                bodyTimeout = Time.time + 60*Time.deltaTime;
+                bodyTimeout = 3f;
                 return; //break;
             }
         }
@@ -299,13 +311,35 @@ public class AracneAI : MonoBehaviour
                 Debug.DrawLine(bodyTransform.position, bodyTransform.position+transform.up*i*step, Color.green);
                 bodyCurrHeight = targetHeight;
                 bodyDummy.localPosition = transform.up*targetHeight + transform.forward*viewDistance;
+                bodyTimeout = 3f;
                 return;
             }
         }
         // If here, no free space neither above nor below
-        Debug.Log("Warning: obstacle ahead!");
+        Debug.Log("Warning: unavoidable obstacle ahead!");
     }
 
+    private void UpdateBody() // should be executed after updating legs
+    {
+        //TODO: maybe try with defaultHeight instead of currHeight
+        Vector3 candidateNextPos = averageLegsPos + bodyCurrHeight*transform.up;
+        Vector3 diff = (candidateNextPos - lastValidBodyPos);
+        //try to move the body just in the next position, without affecting the body height
+        willBodyHit = Physics.BoxCast(lastValidBodyPos, bodyBox.size*.5f, diff.normalized, out bodyHit, transform.rotation, diff.magnitude, whatIsGround);
+
+        if (!willBodyHit)
+        {
+            // ok, we can move the body ahead and update the positions
+            
+            lastValidBodyPos = candidateNextPos;
+
+        }
+        else // check for free space and offset the body accordingly
+        {
+            // try below
+            // if no free space, try above
+        }
+    }
     IEnumerator PlaceBodyAt(Vector3 targetPos, float animSeconds)
     {
         //Vector3 startPos = bodyTransform.position;
