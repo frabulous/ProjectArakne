@@ -39,10 +39,10 @@ public class FastIK : MonoBehaviour
 
     void LateUpdate()
     {
-        SolveIK();
+        //SolveIK();
     }
 
-    private void Initialize()
+    public void Initialize()
     {
         bones = new Transform[chainLength+1];
         positions = new Vector3[chainLength+1];
@@ -83,7 +83,7 @@ public class FastIK : MonoBehaviour
     }
 
 
-    private void SolveIK()
+    public void SolveIK()
     {
         if (target==null) return;
         if (bonesLength.Length != chainLength) Initialize();
