@@ -53,7 +53,7 @@ public class PlaneMesh
 			}
 		}
         //triangles
-        int numOfVerticesToScan = (2*verticesDensity-1)*verticesDensity;
+        int numOfVerticesToScan = (2*verticesDensity-1)*verticesDensity; //TODO: check how many iterations are done (probably too many)
 		int f = 0;
 		for (v=0; v < numOfVerticesToScan; v++)
 		{
