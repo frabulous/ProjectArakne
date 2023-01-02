@@ -143,6 +143,11 @@ public class FastIK : MonoBehaviour
             
             for (var i = 1; i < positions.Length-1; i++) // we skip root and leaf bones
             {
+                // For each internal bone, we project the pole and the bone 
+                // on the plane passing through the previous bone
+                // and having as normal the vector from the previous bone to the next one.
+                // Then we rotate the bone around the normal to minimize the angle and to align it with the pole
+                
                 Plane plane = new Plane(positions[i+1] - positions[i-1], positions[i-1]);
                 Vector3 projectedPole = plane.ClosestPointOnPlane(pole.position);
                 Vector3 projectedBone = plane.ClosestPointOnPlane(positions[i]);
