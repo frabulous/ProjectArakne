@@ -5,27 +5,29 @@ using UnityEngine;
 public class FloatAround : MonoBehaviour
 {
     public float radius = 1.0f;
-    public float timer = 2.0f;
+    public float timer = 3.0f;
 
     private Vector3 localCenter;
+    private float timeout;
 
     // Start is called before the first frame update
     void Start()
     {
         localCenter = transform.localPosition;
+        timeout = timer;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (timer > 0)
+        if (timeout > 0f)
         {
-            timer -= Time.deltaTime;
+            timeout -= Time.deltaTime;
         }
         else
         {
             StartCoroutine(SmoothMove());
-            timer = 2.0f;
+            timeout = Random.Range(0.9f, 1.1f) * timer;
         }
     }
 

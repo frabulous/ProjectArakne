@@ -502,8 +502,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7347203f71f847640ab069a360fe9747, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  radius: 1
-  timer: 2
+  radius: 0.5
+  timer: 2.5
 --- !u!1 &176384240
 GameObject:
   m_ObjectHideFlags: 0
@@ -1749,8 +1749,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1795969362}
-  - {fileID: 963194228}
   - {fileID: 1220082263}
+  - {fileID: 963194228}
   m_Father: {fileID: 1931222249}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -1775,7 +1775,7 @@ MonoBehaviour:
   legsTransform: {fileID: 126946907}
   bodyWidth: 0.75
   bodyLength: 0.9
-  handleDistance: 2
+  handleDistance: 1.2
   poleDelta: {x: 1.35, y: 4, z: 0}
   bodyDefaultHeight: 2.5
   bodyCurrHeight: 0
@@ -1803,6 +1803,7 @@ MonoBehaviour:
   target: {fileID: 176384244}
   stopDistance: 2
   slowDistance: 10
+  isBlocked: 0
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -1947,7 +1948,8 @@ MonoBehaviour:
   cableLength: 2
   totalSegments: 5
   segmentsPerUnit: 2
-  cableWidth: 0.1
+  cableWidthStart: 0.3
+  cableWidthEnd: 0.08
   verletIterations: 1
   solverIterations: 2
   stiffness: 1
@@ -2061,8 +2063,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7347203f71f847640ab069a360fe9747, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  radius: 1
-  timer: 2
+  radius: 0.5
+  timer: 2.5
 --- !u!1183024399 &733158910
 LookAtConstraint:
   m_ObjectHideFlags: 0
@@ -2195,7 +2197,8 @@ MonoBehaviour:
   cableLength: 2
   totalSegments: 5
   segmentsPerUnit: 2
-  cableWidth: 0.1
+  cableWidthStart: 0.3
+  cableWidthEnd: 0.08
   verletIterations: 1
   solverIterations: 2
   stiffness: 1
@@ -2414,7 +2417,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 575289486}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 18.201, y: 143.7, z: 0}
 --- !u!1 &1000148051
 GameObject:
@@ -2637,7 +2640,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 575289486}
-  m_RootOrder: 2
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &1220082264
 BoxCollider:
@@ -3023,7 +3026,8 @@ MonoBehaviour:
   cableLength: 2
   totalSegments: 5
   segmentsPerUnit: 2
-  cableWidth: 0.1
+  cableWidthStart: 0.3
+  cableWidthEnd: 0.08
   verletIterations: 1
   solverIterations: 2
   stiffness: 1
@@ -3130,8 +3134,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1620134162}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.5}
-  m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
+  m_LocalPosition: {x: -0.002, y: -0.001, z: 0.45}
+  m_LocalScale: {x: 0.4, y: 0.5, z: 0.15}
   m_Children: []
   m_Father: {fileID: 1705737078}
   m_RootOrder: 0
@@ -3373,8 +3377,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7347203f71f847640ab069a360fe9747, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  radius: 1
-  timer: 2
+  radius: 0.5
+  timer: 2.5
 --- !u!1183024399 &1705737080
 LookAtConstraint:
   m_ObjectHideFlags: 0
@@ -3791,8 +3795,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2014472349}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.5}
-  m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
+  m_LocalPosition: {x: -0.001, y: -0.001, z: 0.45}
+  m_LocalScale: {x: 0.4, y: 0.5, z: 0.15}
   m_Children: []
   m_Father: {fileID: 149745452}
   m_RootOrder: 0
@@ -4004,8 +4008,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2052763652}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.5}
-  m_LocalScale: {x: 0.25, y: 0.25, z: 0.25}
+  m_LocalPosition: {x: -0.003, y: -0.001, z: 0.45}
+  m_LocalScale: {x: 0.4, y: 0.5, z: 0.15}
   m_Children: []
   m_Father: {fileID: 733158908}
   m_RootOrder: 0

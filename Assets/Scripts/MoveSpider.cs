@@ -9,6 +9,8 @@ public class MoveSpider : MonoBehaviour
     public float stopDistance = 2f;
     public float slowDistance = 10f;
 
+    public bool isBlocked;
+
     void Start()
     {
         StartCoroutine(WaitAndEnable());
@@ -17,6 +19,8 @@ public class MoveSpider : MonoBehaviour
 
     void Update()
     {
+        if (isBlocked) return;
+        
         float speed = moveSpeed;
         if (target)
         {
@@ -47,8 +51,8 @@ public class MoveSpider : MonoBehaviour
         this.enabled = true;
     }
 
-    private void OnDrawGizmos() {
-
+    private void OnDrawGizmosSelected()
+    {
         if (target)
         {
             Vector3 destination = new Vector3(target.position.x, transform.position.y, target.position.z);

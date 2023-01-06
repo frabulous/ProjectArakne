@@ -259,6 +259,8 @@ public class AracneAI : MonoBehaviour
         //Vector3 candidateNextPos = averageLegsPos + bodyDefaultHeight*transform.up;
         Vector3 candidateNextPos = transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up;
         //Vector3 diff = (candidateNextPos - lastValidBodyPos);
+
+        this.GetComponent<MoveSpider>().isBlocked = false;
         
         // try to move the body just in the next position, without affecting the body height
         //willBodyHit = Physics.BoxCast(lastValidBodyPos, bodyBox.size*.5f, diff.normalized, out bodyHit, transform.rotation, viewDistance, whatIsGround);
@@ -270,7 +272,7 @@ public class AracneAI : MonoBehaviour
             lastValidBodyPos = candidateNextPos;
             return bodyCurrHeight;
         }
-        else // check for free space and offset the body accordingly
+        else // check for free space, then offset the body accordingly
         {
             Debug.Log("collision detected!");
             float step = 0.15f; //the deltaY for each box-check
@@ -309,6 +311,7 @@ public class AracneAI : MonoBehaviour
             }
             // if here, no free space available
             Debug.Log("Warning: unable to avoid the obstacle");
+            this.GetComponent<MoveSpider>().isBlocked = true;
             return bodyCurrHeight;
         }
     }

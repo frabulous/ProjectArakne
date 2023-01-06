@@ -15,7 +15,8 @@ public class CableComponent : MonoBehaviour
 	[SerializeField] private int totalSegments = 5;
 	[SerializeField] private float segmentsPerUnit = 2f;
 	private int segments = 0;
-	[SerializeField] private float cableWidth = 0.1f;
+	[SerializeField] private float cableWidthStart = 0.1f;
+	[SerializeField] private float cableWidthEnd = 0.1f;
 
 	// Solver config
 	[SerializeField] private int verletIterations = 1;
@@ -76,8 +77,9 @@ public class CableComponent : MonoBehaviour
 	void InitLineRenderer()
 	{
 		line = this.gameObject.AddComponent<LineRenderer>();
-		line.SetWidth(cableWidth, cableWidth);
-		line.SetVertexCount(segments + 1);
+		line.widthCurve = AnimationCurve.Linear(0, cableWidthStart, 1, cableWidthEnd);
+		//line.SetWidth(cableWidthStart, cableWidthEnd);
+		line.positionCount = segments + 1;
 		line.material = cableMaterial;
 		line.GetComponent<Renderer>().enabled = true;
 	}
