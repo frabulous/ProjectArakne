@@ -221,10 +221,15 @@ public class AracneAI : MonoBehaviour
         //Debug.Log("distance from leg: " + distanceFromLeg);
         Debug.DrawLine(legTargets[i].position, legHandles[i].position, Color.red);
 
-        int oppositeIndex = 2*pairOfLegs-1 - i;
+        //int oppositeIndex = 2*pairOfLegs-1 - i;
+        int oppositeIndex = i < pairOfLegs ? i+pairOfLegs : i-pairOfLegs;
         if (!hasToMoveLegs[i] && distanceFromLeg > maxDistance && !hasToMoveLegs[oppositeIndex])
         {
-            hasToMoveLegs[i] = true;
+            //check if the neighbouring leg (i+1) isn't moving, excluding front legs
+            if ((i+1)%pairOfLegs == 0 || !hasToMoveLegs[i+1])
+            {
+                hasToMoveLegs[i] = true;
+            }
         }
 
         if (hasToMoveLegs[i])
