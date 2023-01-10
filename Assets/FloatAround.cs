@@ -4,20 +4,18 @@ using UnityEngine;
 
 public class FloatAround : MonoBehaviour
 {
-    public float radius = 1.0f;
-    public float timer = 3.0f;
+    public float radius = 1.0f; //radius of the sphere around the object
+    public float timer = 3.0f; //time in seconds before moving to a new position
 
     private Vector3 localCenter;
     private float timeout;
 
-    // Start is called before the first frame update
     void Start()
     {
         localCenter = transform.localPosition;
         timeout = timer;
     }
-
-    // Update is called once per frame
+    
     void Update()
     {
         if (timeout > 0f)
@@ -31,7 +29,7 @@ public class FloatAround : MonoBehaviour
         }
     }
 
-    //coroutine that smoothly translates the object to a random position within the radius
+    //coroutine that smoothly translates the object to a random position within given radius
     IEnumerator SmoothMove()
     {
         Vector3 target = localCenter + Random.insideUnitSphere * radius;
@@ -53,4 +51,6 @@ public class FloatAround : MonoBehaviour
         Gizmos.color = Color.grey;
         Gizmos.DrawWireSphere(transform.parent.position + localCenter, radius);
     }
+
+    
 }

@@ -37,6 +37,7 @@ public class AracneAI : MonoBehaviour
     private float bodyTimeout;
     private Vector3 lastValidBodyPos;
     private Coroutine bodyAdjustHeight;
+    private bool bodyAdjustCRisRunning;
 
     private GameObject[] legObjs;
     private Transform[] legHandles, legPoles, legTargets;
@@ -89,8 +90,10 @@ public class AracneAI : MonoBehaviour
         bodyDummy.position = lastValidBodyPos;
         if (Mathf.Abs(nextBodyY - bodyCurrHeight) > .05f)
         {
-            if(bodyAdjustHeight!=null) StopCoroutine(bodyAdjustHeight);
-            bodyAdjustHeight = StartCoroutine(PlaceBodyAt(nextBodyY, .2f));
+            //if(bodyAdjustHeight!=null) StopCoroutine(bodyAdjustHeight);
+            //bodyAdjustHeight = StartCoroutine(PlaceBodyAt(nextBodyY, .2f));
+            if (!bodyAdjustCRisRunning)
+                bodyAdjustHeight = StartCoroutine(PlaceBodyAt(nextBodyY, .2f));
         }
         //bodyCurrHeight = nextBodyY;
 
@@ -113,7 +116,7 @@ public class AracneAI : MonoBehaviour
         {
             legObjs[i] = Instantiate(legPrefab, legsTransform);
             legHandles[i] = Instantiate(handlePrefab).transform;
-            legPoles[i] = Instantiate(polePrefab, legHandles[i]).transform;
+            legPoles[i] = Instantiate(polePrefab, bodyTransform).transform;
             legTargets[i] = Instantiate(targetPrefab, this.transform).transform;
 
             legObjs[i].name += " N" + i;
@@ -124,6 +127,9 @@ public class AracneAI : MonoBehaviour
         
         float legGap = 0f;
         Vector3 pos = new Vector3(bodyWidth,0,0);
+        Vector3 dir = transform.right;
+        float poleDeltaH = Mathf.Sqrt(poleDelta.x*poleDelta.x + poleDelta.z*poleDelta.z);
+
         if (pairOfLegs>1)
         {
             legGap = bodyLength*2f/(float)(pairOfLegs-1);
@@ -133,12 +139,13 @@ public class AracneAI : MonoBehaviour
         for (var i=0; i < pairOfLegs; i++)
         {
             pos = pos + new Vector3(0,0,legGap);
+            dir = pos.normalized;
             Debug.Log("pos: "+ pos.ToString());
             //RIGHT side
             legObjs[i].transform.Translate(pos, Space.Self);
-            legHandles[i].position = legObjs[i].transform.position + new Vector3(handleDistance,0,0);
+            legHandles[i].position = legObjs[i].transform.position + dir*handleDistance; // new Vector3(handleDistance,0,0);
             //legHandles[i].position = (legObjs[i].transform.position - bodyTransform.position).normalized * handleDistance + bodyTransform.position;
-            legPoles[i].position = legHandles[i].position + poleDelta;
+            legPoles[i].position = legHandles[i].position + poleDelta.y*transform.up + poleDeltaH*dir;
             legTargets[i].position = legHandles[i].position;
             
             legTargets[i].GetComponent<NextPositionTarget>().legTarget = legHandles[i];
@@ -153,9 +160,11 @@ public class AracneAI : MonoBehaviour
 
             //LEFT side
             int j = i+pairOfLegs;
+            dir.Set(-dir.x, dir.y, dir.z);
+
             legObjs[j].transform.Translate(new Vector3(-bodyWidth,0,pos.z));
-            legHandles[j].position = legObjs[j].transform.position + new Vector3(-handleDistance,0,0);
-            legPoles[j].position = legHandles[j].position + new Vector3(-poleDelta.x, poleDelta.y, poleDelta.z);
+            legHandles[j].position = legObjs[j].transform.position + dir*handleDistance ; // new Vector3(-handleDistance,0,0);
+            legPoles[j].position = legHandles[j].position + poleDelta.y*transform.up + poleDeltaH*dir;
             legTargets[j].position = legHandles[j].position;
             legTargets[j].GetComponent<NextPositionTarget>().legTarget = legHandles[j];
             /*leafBone = legObjs[j].GetComponentInChildren<FastIK>();
@@ -168,7 +177,7 @@ public class AracneAI : MonoBehaviour
         }
 
         // Put the legs in a zigzag pattern
-        Vector3 deltaZ = Vector3.forward * legGap*0.23f;
+        Vector3 deltaZ = Vector3.forward * legGap*0.5f;
         for (var i = 0; i < pairOfLegs; i++)
         {
             legHandles[i].Translate(deltaZ, Space.Self);
@@ -322,6 +331,7 @@ public class AracneAI : MonoBehaviour
     }
     IEnumerator PlaceBodyAt(float targetHeight, float animSeconds)
     {
+        bodyAdjustCRisRunning = true;
         //Vector3 startPos = bodyTransform.position;
         float startY = bodyCurrHeight;
         float t = 0f;
@@ -334,32 +344,42 @@ public class AracneAI : MonoBehaviour
             bodyCurrHeight = Mathf.Lerp(startY, targetHeight, percent);
             yield return null;
         }
+        bodyAdjustCRisRunning = false;
     }
 
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.yellow;
-
-        float legGap = bodyLength;
-        if (pairOfLegs>1)
+        if(!Application.isPlaying)
         {
-            legGap = bodyLength*2f/(float)(pairOfLegs-1);
-        }
-        Vector3 pos;
+            float legGap = bodyLength;
+            if (pairOfLegs>1)
+            {
+                legGap = bodyLength*2f/(float)(pairOfLegs-1);
+            }
+            Vector3 pos;
+            Vector3 dir;
 
-        for (int i=0; i < pairOfLegs; i++)
-        {
-            pos = bodyTransform.position + new Vector3(bodyWidth,0,i*legGap - bodyLength);
-            if (pairOfLegs<2) pos = bodyTransform.position + new Vector3(bodyWidth,0,0);
+            for (int i=0; i < pairOfLegs; i++)
+            {
+                dir = pairOfLegs<2 ? new Vector3(bodyWidth,0,0) : new Vector3(bodyWidth,0,i*legGap - bodyLength);
+                pos = bodyTransform.position + dir;// + new Vector3(bodyWidth,0,i*legGap - bodyLength);
+                dir = dir.normalized * handleDistance;
+                //if (pairOfLegs<2)
+                //    pos = bodyTransform.position + new Vector3(bodyWidth,0,0);
+                
+                Gizmos.color = Color.yellow;
 
-            Gizmos.DrawWireSphere(pos, .1f); // right root
-            Gizmos.DrawWireSphere(pos - new Vector3(2*bodyWidth,0,0), .1f); // left root
-            Gizmos.DrawWireCube(pos = pos + new Vector3(handleDistance,0,0), Vector3.one*.2f); // right handle
-            Gizmos.DrawWireCube(pos - new Vector3(2*(bodyWidth+handleDistance),0,0), Vector3.one*.2f); // left handle
-            //Gizmos.DrawWireCube(pos = (pos - bodyTransform.position).normalized*handleDistance + bodyTransform.position, Vector3.one*.2f); // right handle
-            //Gizmos.DrawWireCube((new Vector3(-pos.x, pos.y,pos.z)- bodyTransform.position).normalized*handleDistance, Vector3.one*.2f); // left handle
-            Gizmos.DrawWireSphere(pos = pos + poleDelta, .2f); // left pole
-            Gizmos.DrawWireSphere(pos - new Vector3(2*(bodyWidth+handleDistance+poleDelta.x), 0,0), .2f); // right pole
+                Gizmos.DrawWireSphere(pos, .1f); // right root
+                Gizmos.DrawWireSphere(pos - new Vector3(2*bodyWidth,0,0), .1f); // left root
+            
+                Gizmos.DrawWireCube(pos = pos + dir, Vector3.one*.2f); // right handle
+                Gizmos.DrawWireCube(pos - new Vector3(2*(bodyWidth+handleDistance),0,0), Vector3.one*.2f); // left handle
+                //Gizmos.DrawWireCube(pos = pos + new Vector3(handleDistance,0,0), Vector3.one*.2f); // right handle
+                //Gizmos.DrawWireCube(pos - new Vector3(2*(bodyWidth+handleDistance),0,0), Vector3.one*.2f); // left handle
+                
+                Gizmos.DrawWireSphere(pos = pos + poleDelta, .2f); // left pole
+                Gizmos.DrawWireSphere(pos - new Vector3(2*(bodyWidth+handleDistance+poleDelta.x), 0,0), .2f); // right pole
+            }
         }
 
         Gizmos.color = Color.magenta;

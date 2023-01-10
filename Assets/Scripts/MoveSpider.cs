@@ -35,14 +35,13 @@ public class MoveSpider : MonoBehaviour
             else if (sqrDistanceXZ < slowDistance*slowDistance)
             {
                 //slow down
-                speed = Mathf.Lerp(0.5f, moveSpeed, sqrDistanceXZ/(slowDistance*slowDistance));
+                speed = Mathf.Lerp(0.0f, moveSpeed, sqrDistanceXZ/(slowDistance*slowDistance));
             }
 
             transform.LookAt(new Vector3(target.position.x, transform.position.y, target.position.z));
         }
         //Debug.Log("speed = " + speed);
         transform.Translate(Vector3.forward * speed * Time.deltaTime, Space.Self);
-        
     }
     
     private IEnumerator WaitAndEnable()
