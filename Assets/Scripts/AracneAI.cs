@@ -282,7 +282,10 @@ public class AracneAI : MonoBehaviour
     {
         //TODO: maybe try with defaultHeight instead of currHeight
         //Vector3 candidateNextPos = averageLegsPos + bodyDefaultHeight*transform.up;
-        Vector3 candidateNextPos = transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up;
+        Vector3 candidateNextPos = transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up; // + transform.forward*this.GetComponent<MoveSpider>().currentSpeed;
+        //Debug.DrawLine(transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up, candidateNextPos, Color.red);
+        Debug.DrawLine(bodyTransform.position, candidateNextPos, Color.green);
+
         //Vector3 diff = (candidateNextPos - lastValidBodyPos);
 
         this.GetComponent<MoveSpider>().isBlocked = false;

@@ -5,6 +5,7 @@ using UnityEngine;
 public class MoveSpider : MonoBehaviour
 {
     public float moveSpeed = 2f;
+    public float currentSpeed { get; private set; }
     public Transform target;
     public float stopDistance = 2f;
     public float slowDistance = 10f;
@@ -21,7 +22,7 @@ public class MoveSpider : MonoBehaviour
     {
         if (isBlocked) return;
         
-        float speed = moveSpeed;
+        //float speed = moveSpeed;
         if (target)
         {
             //SEEK the target considering only xz plane
@@ -30,18 +31,23 @@ public class MoveSpider : MonoBehaviour
             if (sqrDistanceXZ < stopDistance*stopDistance)
             {
                 //just stop
-                speed = 0;
+                currentSpeed = 0;
             }
             else if (sqrDistanceXZ < slowDistance*slowDistance)
             {
                 //slow down
-                speed = Mathf.Lerp(0.0f, moveSpeed, sqrDistanceXZ/(slowDistance*slowDistance));
+                currentSpeed = Mathf.Lerp(0.0f, moveSpeed, sqrDistanceXZ/(slowDistance*slowDistance));
+            }
+            else
+            {
+                //full speed
+                currentSpeed = moveSpeed;
             }
 
             transform.LookAt(new Vector3(target.position.x, transform.position.y, target.position.z));
         }
         //Debug.Log("speed = " + speed);
-        transform.Translate(Vector3.forward * speed * Time.deltaTime, Space.Self);
+        transform.Translate(Vector3.forward * currentSpeed * Time.deltaTime, Space.Self);
     }
     
     private IEnumerator WaitAndEnable()
