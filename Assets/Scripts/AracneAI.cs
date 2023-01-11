@@ -41,6 +41,7 @@ public class AracneAI : MonoBehaviour
 
     private GameObject[] legObjs;
     private Transform[] legHandles, legPoles, legTargets;
+    private Transform handlesContainer;
 
     void Start()
     {
@@ -80,8 +81,10 @@ public class AracneAI : MonoBehaviour
             leafBones[j].SolveIK();
 
             //averageLegsPos = (averageLegsPos + (legHandles[j].position + legHandles[i].position)*.5f)*.5f;
-            averageLegsHeight = (averageLegsHeight + (legHandles[j].position.y + legHandles[i].position.y)*.5f)*.5f;
+            //averageLegsHeight = (averageLegsHeight + (legHandles[j].position.y + legHandles[i].position.y)*.5f)*.5f;
+            averageLegsHeight += (legHandles[j].position.y + legHandles[i].position.y)*.5f;
         }
+        averageLegsHeight /= pairOfLegs;
         
         //if (isBodyAnimating) return;
 
@@ -93,7 +96,7 @@ public class AracneAI : MonoBehaviour
             //if(bodyAdjustHeight!=null) StopCoroutine(bodyAdjustHeight);
             //bodyAdjustHeight = StartCoroutine(PlaceBodyAt(nextBodyY, .2f));
             if (!bodyAdjustCRisRunning)
-                bodyAdjustHeight = StartCoroutine(PlaceBodyAt(nextBodyY, .2f));
+                bodyAdjustHeight = StartCoroutine(PlaceBodyAt(nextBodyY, .4f));
         }
         //bodyCurrHeight = nextBodyY;
 
@@ -112,12 +115,18 @@ public class AracneAI : MonoBehaviour
         legTargets = new Transform[pairOfLegs*2];
         leafBones = new FastIK[pairOfLegs*2];
 
+        handlesContainer = new GameObject("LEG HANDLES").transform;
+        handlesContainer.SetPositionAndRotation(transform.position, transform.rotation);
+        
+        Transform handlesTargetsContainer = new GameObject("LEG TARGETS").transform;
+        handlesTargetsContainer.SetParent(this.transform, false);
+
         for (var i=0; i < 2*pairOfLegs; i++)
         {
             legObjs[i] = Instantiate(legPrefab, legsTransform);
-            legHandles[i] = Instantiate(handlePrefab).transform;
+            legHandles[i] = Instantiate(handlePrefab, handlesContainer).transform;
             legPoles[i] = Instantiate(polePrefab, bodyTransform).transform;
-            legTargets[i] = Instantiate(targetPrefab, this.transform).transform;
+            legTargets[i] = Instantiate(targetPrefab, handlesTargetsContainer).transform;
 
             legObjs[i].name += " N" + i;
             legHandles[i].name += " N" + i;
@@ -177,13 +186,15 @@ public class AracneAI : MonoBehaviour
         }
 
         // Put the legs in a zigzag pattern
-        Vector3 deltaZ = Vector3.forward * legGap*0.5f;
+        Vector3 deltaZ = Vector3.forward * maxDistance*0.4f;
         for (var i = 0; i < pairOfLegs; i++)
         {
-            legHandles[i].Translate(deltaZ, Space.Self);
-            legPoles[i].Translate(deltaZ*0.5f, Space.Self);
-            legHandles[2*pairOfLegs-1 - i].Translate(deltaZ, Space.Self);
-            legPoles[2*pairOfLegs-1 - i].Translate(deltaZ*0.5f, Space.Self);
+            //legHandles[i].Translate(deltaZ, Space.Self);
+            ////legPoles[i].Translate(deltaZ*0.5f, Space.Self);
+            //legHandles[2*pairOfLegs-1 - i].Translate(deltaZ, Space.Self);
+            ////legPoles[2*pairOfLegs-1 - i].Translate(deltaZ*0.5f, Space.Self);
+            legTargets[i].Translate(deltaZ, Space.Self);
+            legTargets[2*pairOfLegs-1 - i].Translate(deltaZ, Space.Self);
 
             deltaZ *= -1;
         }
@@ -206,7 +217,7 @@ public class AracneAI : MonoBehaviour
         }*/
         else
         {
-            Debug.DrawRay(legTargets[i].position, -transform.up * castDistance, Color.white);
+            Debug.DrawRay(legTargets[i].position, -transform.up * castDistance, Color.red);
             //Debug.Log("Did not Hit");
         }
 
@@ -377,8 +388,8 @@ public class AracneAI : MonoBehaviour
                 //Gizmos.DrawWireCube(pos = pos + new Vector3(handleDistance,0,0), Vector3.one*.2f); // right handle
                 //Gizmos.DrawWireCube(pos - new Vector3(2*(bodyWidth+handleDistance),0,0), Vector3.one*.2f); // left handle
                 
-                Gizmos.DrawWireSphere(pos = pos + poleDelta, .2f); // left pole
-                Gizmos.DrawWireSphere(pos - new Vector3(2*(bodyWidth+handleDistance+poleDelta.x), 0,0), .2f); // right pole
+                Gizmos.DrawWireSphere(pos = pos + poleDelta, .2f); // right pole
+                Gizmos.DrawWireSphere(pos - new Vector3(2*(bodyWidth+handleDistance+poleDelta.x), 0,0), .2f); // left pole
             }
         }
 
