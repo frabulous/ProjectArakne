@@ -263,10 +263,10 @@ public class AracneAI : MonoBehaviour
             {
                 legHandles[i].position = Vector3.MoveTowards(legHandles[i].position, legTargets[i].position, Time.deltaTime*legSpeed*3f);
             }
-            else if (distanceFromLeg > maxDistance*0.6f) //first moving the leg up, before aiming to target directly
+            else if (distanceFromLeg > maxDistance*0.7f) //first moving the leg up, before aiming to target directly
             {
                 legHandles[i].position = Vector3.MoveTowards(legHandles[i].position,
-                        legHandles[i].position+.5f*(legTargets[i].position-legHandles[i].position) + transform.up*.4f,
+                        legHandles[i].position + (legTargets[i].position-legHandles[i].position)*.5f + transform.up*.4f,
                         Time.deltaTime*legSpeed
                         );
             }

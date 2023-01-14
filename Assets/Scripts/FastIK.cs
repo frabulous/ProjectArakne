@@ -5,21 +5,24 @@ using UnityEditor;
 
 public class FastIK : MonoBehaviour
 {
-    
     [Header("Initial Setup")]
     [SerializeField] [Range(2,10)] private int chainLength = 2;
     [SerializeField] public Transform target;
     [SerializeField] public Transform pole;
 
-    [Header("Solver Properties")]
+    [Header("Solver Parameters")]
+    /// <summary>
+    ///  Amount of iterations per frame the solver will do to reach the target
+    /// </summary>
     [SerializeField] private int iterations = 10;
     /// <summary>
     ///  The tolerance of the solver.
-    ///  It will stop the iterations when the distance from the target is lower
+    ///  It will stop the iterations when the distance from the target gets lower
     /// </summary>
-    [SerializeField] private float delta = .001f;
+    [SerializeField] private float delta = .01f;
 
     //[SerializeField] [Range(0,1)] private float strength = 1;
+    public bool useNewTechnique;
 
 
     private Transform[] bones;
@@ -89,7 +92,7 @@ public class FastIK : MonoBehaviour
         if (bonesLength.Length != chainLength) Initialize();
 
         // Getting the bone positions to make some computations without affecting them directly
-        for (var i = 0; i < bones.Length; i++)
+        for (int i=0; i < bones.Length; i++)
         {
             positions[i] = bones[i].position;
         }
@@ -97,14 +100,14 @@ public class FastIK : MonoBehaviour
         var rootRot = (bones[0].parent != null) ? bones[0].parent.rotation : Quaternion.identity;
         var rootRotDiff = rootRot * Quaternion.Inverse(startRotationRoot);
 
-        if (Vector3.SqrMagnitude(target.position - bones[0].position) > completeLength*completeLength)
+        if (Vector3.SqrMagnitude(target.position - positions[0]) >= completeLength*completeLength)
         {
             // In this case the target is further than the length of the (extended) limb;
-            // so we need to "stretch" the bones and direct everything towards the target
+            // so we just need to align the bones and direct everything towards the target
 
             Vector3 direction = (target.position - positions[0]).normalized;
 
-            for (var i = 1; i < positions.Length; i++) // we skip the root one that stays in place
+            for (int i=1; i < positions.Length; i++) // we skip the root, that stays in place
             {
                 positions[i] = positions[i-1] + direction*bonesLength[i-1];
             }
@@ -114,21 +117,31 @@ public class FastIK : MonoBehaviour
             // In this case we need to bend the limb and try to place the leaf bone on target accordingly;
             // we do it through iterations from leaf to root and viceversa to be more accurate
 
-            for (int n = 0; n < iterations; n++)
+            for (int n=0; n < iterations; n++)
             {
                 /// BACKWARD
                 /// 
-                positions[positions.Length - 1] = target.position; //base step: put the leaf bone on the target
+                positions[positions.Length-1] = target.position; //base step: put the leaf bone on the target
 
                 for (int i = positions.Length-2; i > 0; i--) //N.B: i>0 means we don't move the root bone at all!
                 {
-                    //any other bone in the chain is put along the line connecting it to its child bone
-                    positions[i] = positions[i+1] + (positions[i] - positions[i+1]).normalized * bonesLength[i];
+                    if (!useNewTechnique)
+                    {
+                        //any other bone in the chain is put along the line connecting it to its child bone
+                        positions[i] = positions[i+1] + (positions[i] - positions[i+1]).normalized * bonesLength[i];
+                    }
+                    else 
+                    {
+                        //TODO
+                        //each bone in the chain is put along the line passing through i+1 and the point in between i and i-1 bones
+                        Vector3 dir = ((positions[i-1] + positions[i])*.5f) - positions[i+1];
+                        positions[i] = positions[i+1] + dir.normalized * bonesLength[i];
+                    }
                 }
 
                 /// FORWARD
                 /// 
-                for (int i = 1; i < positions.Length; i++)
+                for (int i=1; i < positions.Length; i++)
                 {
                     positions[i] = positions[i-1] + (positions[i] - positions[i-1]).normalized * bonesLength[i-1];
                 }
@@ -140,8 +153,7 @@ public class FastIK : MonoBehaviour
 
         if (pole != null)
         {
-            
-            for (var i = 1; i < positions.Length-1; i++) // we skip root and leaf bones
+            for (int i=1; i < positions.Length-1; i++) // we skip root and leaf bones
             {
                 // For each internal bone, we project the pole and the bone 
                 // on the plane passing through the previous bone
@@ -155,8 +167,8 @@ public class FastIK : MonoBehaviour
                 positions[i] = Quaternion.AngleAxis(angle, plane.normal) * (positions[i] - positions[i-1]) + positions[i-1];
             }
 
-            /// TEST using vector products instead of plane computations
-            /*for (var i = 1; i < positions.Length-1; i++) // we skip root and leaf bones
+            /// TEST: same approach but using vector products instead of plane computations
+            /*for (int i=1; i < positions.Length-1; i++) // we skip root and leaf bones
             {
                 Vector3 v = positions[i+1]-positions[i-1];
                 Vector3 w = positions[i]-positions[i-1];
@@ -177,7 +189,7 @@ public class FastIK : MonoBehaviour
         }
 
         // Setting the rotations and positions for the actual bones
-        for (var i = 0; i < positions.Length; i++)
+        for (int i=0; i < positions.Length; i++)
         {
             if (i==positions.Length-1)
                 bones[i].rotation = target.rotation * Quaternion.Inverse(startRotationTarget)*startRotationsBone[i];
