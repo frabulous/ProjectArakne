@@ -1636,7 +1636,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5934524e3c5724b46974369159891e7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pairOfLegs: 6
+  pairOfLegs: 2
   legPrefab: {fileID: 1570680093798505772, guid: a20b8b6747997b24dba4c60ab57ec4eb, type: 3}
   handlePrefab: {fileID: 2247765520453695355, guid: 1bdd0a772897fa2408828a23b0461850, type: 3}
   polePrefab: {fileID: 8888840659522478281, guid: b104b71df1bb1614786492a621cb9d64, type: 3}
@@ -1645,7 +1645,7 @@ MonoBehaviour:
   legsTransform: {fileID: 126946907}
   bodyWidth: 0.75
   bodyLength: 0.9
-  handleDistance: 2
+  handleDistance: 1.8
   poleDelta: {x: 1.79, y: 2.75, z: -0.3}
   bodyDefaultHeight: 2.5
   bodyCurrHeight: 0
@@ -1655,7 +1655,7 @@ MonoBehaviour:
     m_Bits: 64
   castDistance: 10
   castOffset: {x: 0, y: 4, z: 0}
-  maxDistance: 1.6
+  maxDistance: 1.3
   legSpeed: 8
 --- !u!114 &575289488
 MonoBehaviour:
@@ -3497,6 +3497,10 @@ PrefabInstance:
       propertyPath: target
       value: 
       objectReference: {fileID: 961769399}
+    - target: {fileID: 1805174791207005146, guid: a20b8b6747997b24dba4c60ab57ec4eb, type: 3}
+      propertyPath: poleForwards
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 2200005762272675734, guid: a20b8b6747997b24dba4c60ab57ec4eb, type: 3}
       propertyPath: m_RootOrder
       value: 2

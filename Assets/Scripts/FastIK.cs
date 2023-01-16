@@ -153,7 +153,7 @@ public class FastIK : MonoBehaviour
 
         if (pole != null)
         {
-            for (int i=1; i < positions.Length-1; i++) // we skip root and leaf bones
+            for (int i=positions.Length-2; i > 0; i--) // we skip root and leaf bones
             {
                 // For each internal bone, we project the pole and the bone 
                 // on the plane passing through the previous bone
@@ -165,6 +165,7 @@ public class FastIK : MonoBehaviour
                 Vector3 projectedBone = plane.ClosestPointOnPlane(positions[i]);
                 float angle = Vector3.SignedAngle(projectedBone - positions[i-1], projectedPole - positions[i-1], plane.normal);
                 positions[i] = Quaternion.AngleAxis(angle, plane.normal) * (positions[i] - positions[i-1]) + positions[i-1];
+                
             }
 
             /// TEST: same approach but using vector products instead of plane computations
