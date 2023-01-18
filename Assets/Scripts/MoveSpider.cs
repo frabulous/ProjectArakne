@@ -14,6 +14,8 @@ public class MoveSpider : MonoBehaviour
 
     void Start()
     {
+        //The activation of the script is delayed to wait 
+        //the spider to be spawned and raised from the ground
         StartCoroutine(WaitAndEnable());
         this.enabled = false;
     }

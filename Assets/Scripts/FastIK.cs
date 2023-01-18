@@ -116,29 +116,44 @@ public class FastIK : MonoBehaviour
         {
             // In this case we need to bend the limb and try to place the leaf bone on target accordingly;
             // we do it through iterations from leaf to root and viceversa to be more accurate
+            
+            ///TEST
+            if (useNewTechnique && chainLength==3)
+            {
+                positions[positions.Length-1] = target.position; //base step: put the leaf bone on the target
 
+                Vector3 dir = (pole.position - positions[0]).normalized;
+                positions[1] = positions[0] + dir * bonesLength[0];
+
+                dir = (pole.position - positions[3]).normalized;
+                positions[2] = positions[3] + dir * bonesLength[2];
+
+                dir = (positions[2] - positions[1]).normalized;
+                positions[2] = positions[1] + dir * bonesLength[1];
+            }///TEST end
+            
             for (int n=0; n < iterations; n++)
             {
                 /// BACKWARD
                 /// 
                 positions[positions.Length-1] = target.position; //base step: put the leaf bone on the target
-
+                
                 for (int i = positions.Length-2; i > 0; i--) //N.B: i>0 means we don't move the root bone at all!
                 {
-                    if (!useNewTechnique)
-                    {
+                    //if (useNewTechnique)
+                    //{
+                    //    //TODO
+                    //    //each bone in the chain is put along the line passing through i+1 and the point in between i and i-1 bones
+                    //    //Vector3 dir = ((positions[i-1] + positions[i])*.5f) - positions[i+1];
+                    //    //positions[i] = positions[i+1] + dir.normalized * bonesLength[i];
+                    //}
+                    //else
+                    //{
                         //any other bone in the chain is put along the line connecting it to its child bone
                         positions[i] = positions[i+1] + (positions[i] - positions[i+1]).normalized * bonesLength[i];
-                    }
-                    else 
-                    {
-                        //TODO
-                        //each bone in the chain is put along the line passing through i+1 and the point in between i and i-1 bones
-                        Vector3 dir = ((positions[i-1] + positions[i])*.5f) - positions[i+1];
-                        positions[i] = positions[i+1] + dir.normalized * bonesLength[i];
-                    }
+                    //}
                 }
-
+            
                 /// FORWARD
                 /// 
                 for (int i=1; i < positions.Length; i++)
@@ -148,6 +163,7 @@ public class FastIK : MonoBehaviour
 
                 if (Vector3.SqrMagnitude(target.position - positions[positions.Length-1]) < delta*delta)
                     break; // the leaf bone is close enough to the target
+                
             }
         }
 

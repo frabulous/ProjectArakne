@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEditor;
 
 
 public class AracneAI : MonoBehaviour
@@ -53,8 +54,9 @@ public class AracneAI : MonoBehaviour
         //bodyTransform.position += Vector3.up*bodyStartHeight;
         StartCoroutine(PlaceBodyAt(bodyDefaultHeight, 1.75f));
         
+        bodyTransform.GetChild(0).localScale = new Vector3(bodyLength*111.11f, bodyWidth*133.34f, 80f);
+        bodyBox.size = new Vector3(bodyWidth*2.2f, 1f, bodyLength*3.2f);
     }
-
     void Update()
     {
         /*if (pairOfLegs*2 != legObjs.Length)
@@ -282,9 +284,15 @@ public class AracneAI : MonoBehaviour
     {
         //TODO: maybe try with defaultHeight instead of currHeight
         //Vector3 candidateNextPos = averageLegsPos + bodyDefaultHeight*transform.up;
-        Vector3 candidateNextPos = transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up; // + transform.forward*this.GetComponent<MoveSpider>().currentSpeed;
+        Vector3 candidateNextPos = transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up + transform.forward*this.GetComponent<MoveSpider>().currentSpeed*10;
         //Debug.DrawLine(transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up, candidateNextPos, Color.red);
         Debug.DrawLine(bodyTransform.position, candidateNextPos, Color.green);
+        
+        //Handles.color = Color.green;
+        //Handles.matrix = Matrix4x4.TRS(transform.position,
+        //                                transform.rotation,
+        //                                transform.lossyScale);
+        //Handles.DrawWireCube(candidateNextPos, Vector3.one);
 
         //Vector3 diff = (candidateNextPos - lastValidBodyPos);
 

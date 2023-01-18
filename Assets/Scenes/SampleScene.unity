@@ -1636,7 +1636,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5934524e3c5724b46974369159891e7d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  pairOfLegs: 2
+  pairOfLegs: 4
   legPrefab: {fileID: 1570680093798505772, guid: a20b8b6747997b24dba4c60ab57ec4eb, type: 3}
   handlePrefab: {fileID: 2247765520453695355, guid: 1bdd0a772897fa2408828a23b0461850, type: 3}
   polePrefab: {fileID: 8888840659522478281, guid: b104b71df1bb1614786492a621cb9d64, type: 3}
