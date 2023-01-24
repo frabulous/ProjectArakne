@@ -21,14 +21,13 @@ public class FastIK : MonoBehaviour
     /// </summary>
     [SerializeField] private float delta = .01f;
 
-    //[SerializeField] [Range(0,1)] private float strength = 1;
+    [SerializeField] [Range(0,1)] private float strength = 1;
     public bool useNewTechnique;
 
-
     private Transform[] bones;
-    private Vector3[] positions;    
-    private float[] bonesLength;
-    private float completeLength;
+    private Vector3[] positions;
+    private float[] boneLengths;
+    private float fullLength;
     //for rotations:
     private Vector3[] startDirectionsToNext;
     private Quaternion[] startRotationsBone;
@@ -49,8 +48,8 @@ public class FastIK : MonoBehaviour
     {
         bones = new Transform[chainLength+1];
         positions = new Vector3[chainLength+1];
-        bonesLength = new float[chainLength];
-        completeLength = 0;
+        boneLengths = new float[chainLength];
+        fullLength = 0;
 
         startDirectionsToNext = new Vector3[chainLength+1];
         startRotationsBone = new Quaternion[chainLength+1];
@@ -70,26 +69,25 @@ public class FastIK : MonoBehaviour
             else
             {
                 startDirectionsToNext[i] = bones[i+1].position - curr.position;
-                bonesLength[i] = startDirectionsToNext[i].magnitude;
-                //bonesLength[i] = (curr.position - bones[i+1].position).magnitude;
-                completeLength += bonesLength[i];
+                boneLengths[i] = startDirectionsToNext[i].magnitude;
+                //boneLengths[i] = (curr.position - bones[i+1].position).magnitude;
+                fullLength += boneLengths[i];
             }
 
             curr = curr.parent;
         }
-
-        print("Initialized!");
-        print("bones: " + bones.ToString());
-        print("positions: " + positions.ToString());
-        print("bonesLength: " + bonesLength.ToString());
-        print("completeLength: " + completeLength);
+        //print("Initialized!");
+        //print("bones: " + bones.ToString());
+        //print("positions: " + positions.ToString());
+        //print("boneLengths: " + boneLengths.ToString());
+        //print("fullLength: " + fullLength);
     }
 
 
     public void SolveIK()
     {
         if (target==null) return;
-        if (bonesLength.Length != chainLength) Initialize();
+        if (boneLengths.Length != chainLength) Initialize();
 
         // Getting the bone positions to make some computations without affecting them directly
         for (int i=0; i < bones.Length; i++)
@@ -100,7 +98,7 @@ public class FastIK : MonoBehaviour
         var rootRot = (bones[0].parent != null) ? bones[0].parent.rotation : Quaternion.identity;
         var rootRotDiff = rootRot * Quaternion.Inverse(startRotationRoot);
 
-        if (Vector3.SqrMagnitude(target.position - positions[0]) >= completeLength*completeLength)
+        if (Vector3.SqrMagnitude(target.position - positions[0]) >= fullLength*fullLength)
         {
             // In this case the target is further than the length of the (extended) limb;
             // so we just need to align the bones and direct everything towards the target
@@ -109,7 +107,7 @@ public class FastIK : MonoBehaviour
 
             for (int i=1; i < positions.Length; i++) // we skip the root, that stays in place
             {
-                positions[i] = positions[i-1] + direction*bonesLength[i-1];
+                positions[i] = positions[i-1] + direction*boneLengths[i-1];
             }
         }
         else
@@ -123,15 +121,24 @@ public class FastIK : MonoBehaviour
                 positions[positions.Length-1] = target.position; //base step: put the leaf bone on the target
 
                 Vector3 dir = (pole.position - positions[0]).normalized;
-                positions[1] = positions[0] + dir * bonesLength[0];
+                positions[1] = positions[0] + dir * boneLengths[0];
 
                 dir = (pole.position - positions[3]).normalized;
-                positions[2] = positions[3] + dir * bonesLength[2];
+                positions[2] = positions[3] + dir * boneLengths[2];
 
                 dir = (positions[2] - positions[1]).normalized;
-                positions[2] = positions[1] + dir * bonesLength[1];
+                positions[2] = positions[1] + dir * boneLengths[1];
             }///TEST end
-            
+
+            if (strength > 0f)
+            {
+                //use the strength parameter to get each bone back to its original position
+                for (int i=1; i < positions.Length; i++) 
+                {
+                    positions[i] = Vector3.Lerp(positions[i], positions[i-1] + startDirectionsToNext[i-1], strength);
+                }
+            }
+
             for (int n=0; n < iterations; n++)
             {
                 /// BACKWARD
@@ -145,12 +152,12 @@ public class FastIK : MonoBehaviour
                     //    //TODO
                     //    //each bone in the chain is put along the line passing through i+1 and the point in between i and i-1 bones
                     //    //Vector3 dir = ((positions[i-1] + positions[i])*.5f) - positions[i+1];
-                    //    //positions[i] = positions[i+1] + dir.normalized * bonesLength[i];
+                    //    //positions[i] = positions[i+1] + dir.normalized * boneLengths[i];
                     //}
                     //else
                     //{
                         //any other bone in the chain is put along the line connecting it to its child bone
-                        positions[i] = positions[i+1] + (positions[i] - positions[i+1]).normalized * bonesLength[i];
+                        positions[i] = positions[i+1] + (positions[i] - positions[i+1]).normalized * boneLengths[i];
                     //}
                 }
             
@@ -158,7 +165,7 @@ public class FastIK : MonoBehaviour
                 /// 
                 for (int i=1; i < positions.Length; i++)
                 {
-                    positions[i] = positions[i-1] + (positions[i] - positions[i-1]).normalized * bonesLength[i-1];
+                    positions[i] = positions[i-1] + (positions[i] - positions[i-1]).normalized * boneLengths[i-1];
                 }
 
                 if (Vector3.SqrMagnitude(target.position - positions[positions.Length-1]) < delta*delta)
