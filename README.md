@@ -197,18 +197,54 @@ Additionally, the boolean *isBlocked* is a flag controlled by ArakneAI and it is
 
 
 ### Creating enviroments where letting the spider move
-#### 1. Playground
+#### Environment 1: a Playground
 *Un terreno pianeggiante costituito da un plane, a cui sono stati aggiunti dei modelli di varie forme, posizionati in modo tale da fungere da ostacoli, sia a terra che sospesi.
 Esempio: scala*
 
-A flat terrain consisting of a plane, to which 3d models of various shapes have been added; they are positioned in such a way as to serve as elevated spots or as obstacles (on the ground or suspended). Example: ladder.
+A flat terrain consisting of a plane, to which 3d models of various shapes have been added; they are positioned in such a way as to serve as elevated spots or as obstacles (on the ground or suspended). 
+Example: ladder.
+
 The ground plane has a PlaneCollider component in order to be detected by raycasting, as well as any other model has a Collider matching to its mesh.
 These elements also are a specific Layer: *Ground*; it is used by the agent AI during the raycasting operations to distinguish ground objects from body parts.
 
-#### 2. Procedural noised ground**
-* Unity: mesh from script
-* Simple Noise from opensource
-* Handling procedural generation from Unity Inspector (Sebastian Lague variant)
+#### Environment 2: a Procedural, noise-based ground**
+For the second type of environment we are going to use noised-based terrain generation, that is a technique used in game development and other fields to procedurally create realistic and varied landscapes. The process makes use of mathematical noise functions - such as Perlin or Simplex noise - to generate a heightmap, which is then used to shape the terrain. This method allows for the creation of infinite, unique terrain with little manual input.
+
+##### Unity: mesh from script
+Even if Unity offers a built-in Terrain gameobject, it is actually an annoying asset to work with. That is because of many factors; its default size is very big and it is not easy to adjust. Also, the dedicated libraries
+
+So we take this as an opportunity to generate a mesh from code in Unity.
+When we create a `Mesh`, we have to provide at least two arrays:
+* one for the `vertices`  which contains all the points (Vector3 objects) that make up the shape in space. Using these vertices, the individual triangles are defined, each of which represents a face of the mesh.
+* and one for the `triangles`, that is made up of indices of the vertices array, which, grouped in threes, correspond to the faces of the mesh.
+
+TODO: figura vertices, triangles
+
+N.B: The order of the vertices in these groups is important because it defines the direction of traversing the perimeter of each triangle and, consequently, the direction of the normal vector for that face.
+
+In order to generate a custom flat lattice, we create the `PlaneMesh` class: it takes a desired `verticesDensity` and creates a 1x1 size mesh containing `verticesDensity*verticesDensity` evenly-spaced vertices.
+The generated square is centered in the origin, while the vertices array starts with the one in the bottom-left corner, having coordinates (-0.5, 0.0 ,-0.5).
+
+TODO: figura lattice xz plane
+
+* PlaneMesh is used by Ground script, attached to the actual gameobject for the terrain. Ground uses the resolution variable to control verticesDensity. Ground also adds a MeshRender component (required by Unity for the rendering) and a MeshCollider (for physics).
+* a
+* ScriptableObjects for Shape and Color
+* GroundEditor for custom editor
+* Noise: 
+  * Noise.cs (Simplex noise implementation)
+  * NoiseSettings
+  * NoiseTuner
+  * ShapeGenerator
+
+
+
+
+##### Simple Noise from opensource
+
+##### Handling procedural generation from Unity Inspector (Sebastian Lague variant)
+
+
 ### Adjust body height depending on legs average
 
 ### Adjust body height if will collide**

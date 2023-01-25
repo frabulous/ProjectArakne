@@ -198,6 +198,8 @@ MonoBehaviour:
   pole: {fileID: 8888840659522478285, guid: b104b71df1bb1614786492a621cb9d64, type: 3}
   iterations: 2
   delta: 0.01
+  strength: 0
+  useNewTechnique: 0
 --- !u!1 &6930836356558248277
 GameObject:
   m_ObjectHideFlags: 0

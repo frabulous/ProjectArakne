@@ -384,22 +384,20 @@ public class AracneAI : MonoBehaviour
             for (int i=0; i < pairOfLegs; i++)
             {
                 dir = pairOfLegs<2 ? new Vector3(bodyWidth,0,0) : new Vector3(bodyWidth,0,i*legGap - bodyLength);
-                pos = bodyTransform.position + dir;// + new Vector3(bodyWidth,0,i*legGap - bodyLength);
-                dir = dir.normalized * handleDistance;
-                //if (pairOfLegs<2)
-                //    pos = bodyTransform.position + new Vector3(bodyWidth,0,0);
-                
+                pos = bodyTransform.position;// + new Vector3(bodyWidth,0,i*legGap - bodyLength);
+
                 Gizmos.color = Color.yellow;
 
-                Gizmos.DrawWireSphere(pos, .1f); // right root
-                Gizmos.DrawWireSphere(pos - new Vector3(2*bodyWidth,0,0), .1f); // left root
-            
-                Gizmos.DrawWireCube(pos = pos + dir, Vector3.one*.2f); // right handle
-                Gizmos.DrawWireCube(pos - new Vector3(2*(bodyWidth+handleDistance),0,0), Vector3.one*.2f); // left handle
+                Gizmos.DrawWireSphere(pos + dir, .1f); // right root
+                Gizmos.DrawWireSphere(pos + new Vector3(-dir.x,dir.y,dir.z), .1f); // left root
+
+                dir = dir.normalized * handleDistance;
+                Gizmos.DrawWireCube(pos + dir, Vector3.one*.2f); // right handle
+                Gizmos.DrawWireCube(pos - dir, Vector3.one*.2f); // left handle
                 //Gizmos.DrawWireCube(pos = pos + new Vector3(handleDistance,0,0), Vector3.one*.2f); // right handle
                 //Gizmos.DrawWireCube(pos - new Vector3(2*(bodyWidth+handleDistance),0,0), Vector3.one*.2f); // left handle
                 
-                Gizmos.DrawWireSphere(pos = pos + poleDelta, .2f); // right pole
+                Gizmos.DrawWireSphere(pos + dir + poleDelta, .2f); // right pole
                 Gizmos.DrawWireSphere(pos - new Vector3(2*(bodyWidth+handleDistance+poleDelta.x), 0,0), .2f); // left pole
             }
         }

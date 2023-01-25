@@ -37,6 +37,8 @@ public class PlaneMesh
             }
         }*/
         //float step = size/(float)(verticesDensity-1);
+
+		//VERTICES
 		float step = 1f/(float)(verticesDensity-1);
 		int v = 0;
 		for (int i = 0; i < verticesDensity; i++)
@@ -52,26 +54,20 @@ public class PlaneMesh
 				v++;
 			}
 		}
-        //triangles
-        int numOfVerticesToScan = (2*verticesDensity-1)*verticesDensity; //TODO: check how many iterations are done (probably too many)
-		int f = 0;
+        //TRIANGLES
+        int numOfVerticesToScan = (verticesDensity-1)*verticesDensity; //skip right edge
+		int t = 0;
 		for (v=0; v < numOfVerticesToScan; v++)
 		{
-			int i = v/verticesDensity;
-			int j = v%verticesDensity;
-
-			if (j != verticesDensity-1)
+			if (v%verticesDensity != verticesDensity-1) //skip top edge
 			{
-				if (i < verticesDensity-1) //front side
-				{
-					triangles[f++] = v;
-					triangles[f++] = (v+verticesDensity+1);
-					triangles[f++] = (v+verticesDensity);
-					
-					triangles[f++] = v;
-					triangles[f++] = (v+1);
-					triangles[f++] = (v+verticesDensity+1);
-				}
+				triangles[t++] = v;
+				triangles[t++] = (v+verticesDensity+1);
+				triangles[t++] = (v+verticesDensity);
+				
+				triangles[t++] = v;
+				triangles[t++] = (v+1);
+				triangles[t++] = (v+verticesDensity+1);
 			}
 		}
         mesh.Clear();
