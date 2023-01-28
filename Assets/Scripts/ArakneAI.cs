@@ -16,21 +16,21 @@ public class ArakneAI : MonoBehaviour
     [SerializeField] private Vector3 poleDelta;
 
     private const float MIN_bodyHeight = 1f, MAX_bodyHeight = 4f;
-    [Header("Body Settings")]
+    [Header("Settings")]
     [SerializeField][Range(MIN_bodyHeight, MAX_bodyHeight)] private float bodyDefaultHeight;
     [SerializeField][Range(MIN_bodyHeight, MAX_bodyHeight)] private float bodyCurrHeight;
-    
-
-    [Header("Legs settings")]
 
     [SerializeField][Range(1,6)] private int pairsOfLegs;
-    [SerializeField] private float castDistance = 10f;
+    private float castDistance = 10f;
+    /// <summary>
+    ///  Max altitude difference allowed
+    /// </summary>
     [SerializeField] float maxStepHeight = 4f;
     Vector3 castOffset;
     /// <summary>
     ///  Limit distance from handle to target before triggering the step animation
     /// </summary>
-    [SerializeField] private float stepGap = 2f;
+    [SerializeField][Range(1.2f, 1.9f)] private float stepGap = 1.3f;
     /// <summary>
     ///  The step animation speed
     /// </summary>
@@ -435,89 +435,4 @@ public class ArakneAI : MonoBehaviour
         Gizmos.color = Color.white;
         Gizmos.DrawWireSphere(transform.position+transform.up*(bodyDefaultHeight-averageLegsHeight), .25f);
     }
-
-    /*private void CheckBody()
-    {
-        if (Mathf.Abs(bodyCurrHeight - bodyDefaultHeight) > .11f)
-        {
-            bodyTimeout -= Time.deltaTime;
-            //Debug.Log("BodyTimeout = "+ bodyTimeout);
-            if (bodyTimeout <= 0)
-            {
-                //try to put the body back in position
-                Vector3 dir = bodyDefaultHeight*Vector3.up
-                                - bodyTransform.localPosition;
-                Debug.DrawRay(bodyBox.bounds.center, dir, Color.yellow, 2f);
-                willBodyHit = Physics.BoxCast(bodyBox.bounds.center, bodyBox.size*.5f, dir.normalized, out bodyHit, transform.rotation, dir.magnitude, whatIsGround);
-                if (!willBodyHit)
-                {
-                    bodyCurrHeight = bodyDefaultHeight;
-                    Debug.Log("Body: back in position!");
-                }
-                else
-                {
-                    bodyTimeout += Time.deltaTime;
-                    Debug.Log("Body: waiting for space...");
-                }
-            }
-        }
-        //cast the body collider forwards
-        willBodyHit = Physics.BoxCast(bodyBox.bounds.center, bodyBox.size*.5f, transform.forward, out bodyHit, transform.rotation, viewDistance, whatIsGround);
-        //willBodyHit = Physics.BoxCast(transform.position+transform.up*(bodyDefaultHeight-averageLegsY), bodyBox.size*.5f, transform.forward, out bodyHit, transform.rotation, viewDistance, whatIsGround);
-        if (!willBodyHit)
-        {
-            // No collisions
-            Debug.DrawLine(bodyBox.bounds.center, bodyBox.bounds.center + transform.forward*viewDistance, Color.blue);
-            Debug.Log("no collisions...");
-            //bodyCurrHeight = bodyDefaultHeight;
-            bodyDummy.position = bodyBox.bounds.center + transform.forward*viewDistance;
-            return;
-        }
-        // If here, no free space in front of the body
-        Debug.Log("Hit : " + bodyHit.collider.name);
-
-        float step = .25f;
-        float targetHeight = bodyCurrHeight - averageLegsHeight;
-        bool willCollide;
-
-        // LET'S CHECK BELOW the current body position for free space
-        for (int i=1; targetHeight > MIN_bodyHeight; i++)
-        {
-            targetHeight = targetHeight - i*step;
-            willCollide = Physics.BoxCast(bodyTransform.position-transform.up*i*step, bodyBox.size*.5f, transform.forward, out bodyHit, transform.rotation, viewDistance, whatIsGround);
-            if (!willCollide)
-            {
-                // There is free space for the body at this position:
-                // we can set the body height accordingly and return
-                Debug.Log("steps = "+ i*step + "; Y = "+ targetHeight);
-                //Vector3 targetPos = bodyBox.bounds.center + transform.forward*viewDistance - transform.up*steps;
-                Debug.DrawLine(bodyTransform.position, bodyTransform.position-transform.up*i*step, Color.green);
-                bodyCurrHeight = targetHeight;
-                bodyDummy.localPosition = transform.up*targetHeight + transform.forward*viewDistance;
-                bodyTimeout = 3f;
-                return; //break;
-            }
-        }
-        // If here, no free space underneath the body: 
-        // LET'S CHECK ABOVE the current body position for free space
-        targetHeight = bodyCurrHeight - averageLegsHeight;
-        for (int i=1; targetHeight < MAX_bodyHeight; i++)
-        {
-            targetHeight = targetHeight + i*step;
-            willCollide = Physics.BoxCast(bodyTransform.position+transform.up*i*step, bodyBox.size*.5f, transform.forward, out bodyHit, transform.rotation, viewDistance, whatIsGround);
-            if (!willCollide)
-            {
-                // There is free space for the body at this position:
-                // we can set the body height accordingly and return
-                Debug.Log("steps = "+ i*step + "; Y = "+ targetHeight);
-                Debug.DrawLine(bodyTransform.position, bodyTransform.position+transform.up*i*step, Color.green);
-                bodyCurrHeight = targetHeight;
-                bodyDummy.localPosition = transform.up*targetHeight + transform.forward*viewDistance;
-                bodyTimeout = 3f;
-                return;
-            }
-        }
-        // If here, no free space neither above nor below
-        Debug.Log("Warning: unavoidable obstacle ahead!");
-    }*/
 }

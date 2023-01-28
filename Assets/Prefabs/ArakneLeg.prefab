@@ -127,7 +127,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2200005762272675734}
   m_Layer: 0
-  m_Name: SpiderLeg
+  m_Name: ArakneLeg
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

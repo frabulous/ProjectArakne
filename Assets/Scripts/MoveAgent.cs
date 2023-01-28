@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class MoveAgent : MonoBehaviour
 {
-    public float moveSpeed = 2f;
+    [Range(-3,3)] public float moveSpeed = 1.5f;
     public float currentSpeed { get; private set; }
     public Transform target;
     public float stopDistance = 2f;
