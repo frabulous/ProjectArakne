@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class MoveSpider : MonoBehaviour
+public class MoveAgent : MonoBehaviour
 {
     public float moveSpeed = 2f;
     public float currentSpeed { get; private set; }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 
-public class FastIK : MonoBehaviour
+public class FabrIK : MonoBehaviour
 {
     [Header("Initial Setup")]
     [SerializeField] [Range(2,10)] private int chainLength = 2;
@@ -37,11 +37,6 @@ public class FastIK : MonoBehaviour
     void Awake()
     {
         Initialize();
-    }
-
-    void LateUpdate()
-    {
-        //SolveIK();
     }
 
     public void Initialize()
@@ -191,7 +186,7 @@ public class FastIK : MonoBehaviour
                 
             }
 
-            /// TEST: same approach but using vector products instead of plane computations
+            /// TEST: same approach but using vector products instead of Plane computations
             /*for (int i=1; i < positions.Length-1; i++) // we skip root and leaf bones
             {
                 Vector3 v = positions[i+1]-positions[i-1];
@@ -227,6 +222,7 @@ public class FastIK : MonoBehaviour
 
     private void OnDrawGizmos() 
     {
+        // Uncomment for testing
         /*
         Transform temp = this.transform;
         Transform next = this.transform.parent;

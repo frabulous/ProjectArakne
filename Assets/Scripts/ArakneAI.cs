@@ -1,14 +1,14 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEditor;
 
-
-public class AracneAI : MonoBehaviour
+public class ArakneAI : MonoBehaviour
 {
-    [SerializeField][Range(1,6)] private int pairOfLegs;
+    [Header("Setup")]
+
+    public Transform bodyDummy;
     [SerializeField] private GameObject legPrefab, handlePrefab, polePrefab, targetPrefab;
-    private FastIK[] leafBones;
+    private FabrIK[] leafBones;
 
     [SerializeField] private Transform bodyTransform, legsTransform;
     [SerializeField] private float bodyWidth, bodyLength;
@@ -16,21 +16,31 @@ public class AracneAI : MonoBehaviour
     [SerializeField] private Vector3 poleDelta;
 
     private const float MIN_bodyHeight = 1f, MAX_bodyHeight = 4f;
+    [Header("Body Settings")]
     [SerializeField][Range(MIN_bodyHeight, MAX_bodyHeight)] private float bodyDefaultHeight;
-    [SerializeField] private float bodyCurrHeight;
-    public Transform bodyDummy;
+    [SerializeField][Range(MIN_bodyHeight, MAX_bodyHeight)] private float bodyCurrHeight;
+    
 
-    [Header("Target settings")]
-    [SerializeField] private LayerMask whatIsGround;
+    [Header("Legs settings")]
+
+    [SerializeField][Range(1,6)] private int pairsOfLegs;
     [SerializeField] private float castDistance = 10f;
-    [SerializeField] Vector3 castOffset;
-    [SerializeField] private float maxDistance = 2f;
+    [SerializeField] float maxStepHeight = 4f;
+    Vector3 castOffset;
+    /// <summary>
+    ///  Limit distance from handle to target before triggering the step animation
+    /// </summary>
+    [SerializeField] private float stepGap = 2f;
+    /// <summary>
+    ///  The step animation speed
+    /// </summary>
     [SerializeField] private float legSpeed = 20f;
+    [SerializeField] private LayerMask whatIsGround;
 
     private float averageLegsHeight;
     private Vector3 averageLegsPos;
     private bool[] hasToMoveLegs;
-    //private bool isBodyAnimating;
+
     private BoxCollider bodyBox;
     bool willBodyHit;
     RaycastHit bodyHit;
@@ -59,11 +69,11 @@ public class AracneAI : MonoBehaviour
     }
     void Update()
     {
-        /*if (pairOfLegs*2 != legObjs.Length)
+        if (pairsOfLegs*2 != legObjs.Length)
         {
-            //TODO: adding legs at run-time
-            //InitLegs();
-        }*/
+            //Changing legs amount at run-time
+            InitLegs();
+        }
     }
 
     void LateUpdate()
@@ -71,22 +81,22 @@ public class AracneAI : MonoBehaviour
         //averageLegsPos = Vector3.zero;
         averageLegsHeight = 0f;
         // UPDATE LEGS
-        for (int i=0; i < pairOfLegs; i++)
+        for (int i=0; i < pairsOfLegs; i++)
         {
-            CheckTarget(i);
-            CheckHandle(i);
+            CheckLegTarget(i);
+            CheckLegHandle(i);
             leafBones[i].SolveIK();
 
-            int j = 2*pairOfLegs-1 - i;
-            CheckTarget(j);
-            CheckHandle(j);
+            int j = 2*pairsOfLegs-1 - i;
+            CheckLegTarget(j);
+            CheckLegHandle(j);
             leafBones[j].SolveIK();
 
             //averageLegsPos = (averageLegsPos + (legHandles[j].position + legHandles[i].position)*.5f)*.5f;
             //averageLegsHeight = (averageLegsHeight + (legHandles[j].position.y + legHandles[i].position.y)*.5f)*.5f;
             averageLegsHeight += (legHandles[j].position.y + legHandles[i].position.y)*.5f;
         }
-        averageLegsHeight /= pairOfLegs;
+        averageLegsHeight /= pairsOfLegs;
         
         //if (isBodyAnimating) return;
 
@@ -110,12 +120,32 @@ public class AracneAI : MonoBehaviour
 
     private void InitLegs()
     {
-        hasToMoveLegs = new bool[pairOfLegs*2];
-        legObjs = new GameObject[pairOfLegs*2];
-        legHandles = new Transform[pairOfLegs*2];
-        legPoles = new Transform[pairOfLegs*2];
-        legTargets = new Transform[pairOfLegs*2];
-        leafBones = new FastIK[pairOfLegs*2];
+        if (legsTransform)
+        {
+            for (int i=0; i<legsTransform.childCount; i++)
+            {
+                Destroy(legsTransform.GetChild(i).gameObject);
+            }
+        }
+        if (legObjs != null)
+            for (int i=0; i < legObjs.Length; i++)
+            {
+                if(legObjs[i]) Destroy(legObjs[i]);
+                if(legPoles[i]) Destroy(legPoles[i].gameObject);
+            }
+        
+        if (handlesContainer!=null)
+            Destroy(handlesContainer.gameObject);
+        if (legTargets!=null)
+            Destroy(legTargets[0].parent.gameObject);
+        
+
+        hasToMoveLegs = new bool[pairsOfLegs*2];
+        legObjs = new GameObject[pairsOfLegs*2];
+        legHandles = new Transform[pairsOfLegs*2];
+        legPoles = new Transform[pairsOfLegs*2];
+        legTargets = new Transform[pairsOfLegs*2];
+        leafBones = new FabrIK[pairsOfLegs*2];
 
         handlesContainer = new GameObject("LEG HANDLES").transform;
         handlesContainer.SetPositionAndRotation(transform.position, transform.rotation);
@@ -123,7 +153,7 @@ public class AracneAI : MonoBehaviour
         Transform handlesTargetsContainer = new GameObject("LEG TARGETS").transform;
         handlesTargetsContainer.SetParent(this.transform, false);
 
-        for (var i=0; i < 2*pairOfLegs; i++)
+        for (var i=0; i < 2*pairsOfLegs; i++)
         {
             legObjs[i] = Instantiate(legPrefab, legsTransform);
             legHandles[i] = Instantiate(handlePrefab, handlesContainer).transform;
@@ -141,68 +171,63 @@ public class AracneAI : MonoBehaviour
         Vector3 dir = transform.right;
         float poleDeltaH = Mathf.Sqrt(poleDelta.x*poleDelta.x + poleDelta.z*poleDelta.z);
 
-        if (pairOfLegs>1)
+        if (pairsOfLegs>1)
         {
-            legGap = bodyLength*2f/(float)(pairOfLegs-1);
+            legGap = bodyLength*2f/(float)(pairsOfLegs-1);
             pos = new Vector3(bodyWidth,0,-bodyLength-legGap);
         }
         
-        for (var i=0; i < pairOfLegs; i++)
+        for (var i=0; i < pairsOfLegs; i++)
         {
             pos = pos + new Vector3(0,0,legGap);
             dir = pos.normalized;
-            Debug.Log("pos: "+ pos.ToString());
+            //Debug.Log("pos: "+ pos.ToString());
+
             //RIGHT side
             legObjs[i].transform.Translate(pos, Space.Self);
-            legHandles[i].position = legObjs[i].transform.position + dir*handleDistance; // new Vector3(handleDistance,0,0);
+            legHandles[i].position = legObjs[i].transform.position + transform.TransformDirection(dir)*handleDistance; // new Vector3(handleDistance,0,0);
             //legHandles[i].position = (legObjs[i].transform.position - bodyTransform.position).normalized * handleDistance + bodyTransform.position;
-            legPoles[i].position = legHandles[i].position + poleDelta.y*transform.up + poleDeltaH*dir;
+            legPoles[i].position = legHandles[i].position + poleDelta.y*transform.up + poleDeltaH*transform.TransformDirection(dir);
             legTargets[i].position = legHandles[i].position;
             
             legTargets[i].GetComponent<NextPositionTarget>().legTarget = legHandles[i];
             
-            //FastIK leafBone = legObjs[i].GetComponentInChildren<FastIK>();
-            //leafBone.target = legHandles[i];
-            //leafBone.pole = legPoles[i];
-            leafBones[i] = legObjs[i].GetComponentInChildren<FastIK>();
+            leafBones[i] = legObjs[i].GetComponentInChildren<FabrIK>();
             leafBones[i].target = legHandles[i];
             leafBones[i].pole = legPoles[i];
             leafBones[i].Initialize();
 
             //LEFT side
-            int j = i+pairOfLegs;
+            int j = i+pairsOfLegs;
             dir.Set(-dir.x, dir.y, dir.z);
 
-            legObjs[j].transform.Translate(new Vector3(-bodyWidth,0,pos.z));
-            legHandles[j].position = legObjs[j].transform.position + dir*handleDistance ; // new Vector3(-handleDistance,0,0);
-            legPoles[j].position = legHandles[j].position + poleDelta.y*transform.up + poleDeltaH*dir;
+            legObjs[j].transform.Translate(new Vector3(-bodyWidth,0,pos.z), Space.Self);
+            legHandles[j].position = legObjs[j].transform.position + transform.TransformDirection(dir)*handleDistance ; // new Vector3(-handleDistance,0,0);
+            legPoles[j].position = legHandles[j].position + poleDelta.y*transform.up + poleDeltaH*transform.TransformDirection(dir);
             legTargets[j].position = legHandles[j].position;
             legTargets[j].GetComponent<NextPositionTarget>().legTarget = legHandles[j];
             /*leafBone = legObjs[j].GetComponentInChildren<FastIK>();
             leafBone.target = legHandles[j];
             leafBone.pole = legPoles[j];*/
-            leafBones[j] = legObjs[j].GetComponentInChildren<FastIK>();
+            leafBones[j] = legObjs[j].GetComponentInChildren<FabrIK>();
             leafBones[j].target = legHandles[j];
             leafBones[j].pole = legPoles[j];
             leafBones[j].Initialize();
         }
 
         // Put the legs in a zigzag pattern
-        Vector3 deltaZ = Vector3.forward * maxDistance*0.4f;
-        for (var i = 0; i < pairOfLegs; i++)
+        Vector3 deltaZ = Vector3.forward * stepGap*0.4f;
+        for (var i = 0; i < pairsOfLegs; i++)
         {
-            //legHandles[i].Translate(deltaZ, Space.Self);
-            ////legPoles[i].Translate(deltaZ*0.5f, Space.Self);
-            //legHandles[2*pairOfLegs-1 - i].Translate(deltaZ, Space.Self);
-            ////legPoles[2*pairOfLegs-1 - i].Translate(deltaZ*0.5f, Space.Self);
             legTargets[i].Translate(deltaZ, Space.Self);
-            legTargets[2*pairOfLegs-1 - i].Translate(deltaZ, Space.Self);
+            legTargets[2*pairsOfLegs-1 - i].Translate(deltaZ, Space.Self);
 
             deltaZ *= -1;
         }
     }
-    void CheckTarget(int i)
+    void CheckLegTarget(int i)
     {
+        castOffset = new Vector3(0f, maxStepHeight, 0f);
         RaycastHit hit;
         if (Physics.Raycast(legTargets[i].position+castOffset, -transform.up, out hit, castDistance, whatIsGround))
         {
@@ -210,13 +235,18 @@ public class AracneAI : MonoBehaviour
             //Debug.Log("Did Hit - downwards");
             legTargets[i].position = hit.point;
         }
-        /*
+        /* //The bottom-up raycast doesnt work because of the single-face ground plane pointing up
         else if (Physics.Raycast(legTargets[i].position-castOffset, transform.up, out hit, castDistance, whatIsGround))
         {
             Debug.DrawRay(legTargets[i].position-castOffset, transform.up * hit.distance, Color.yellow);
             //Debug.Log("Did Hit - upwards");
             legTargets[i].position = hit.point;
         }*/
+        else if (Physics.Raycast(legTargets[i].position+Vector3.up*100, -transform.up, out hit, Mathf.Infinity, whatIsGround))
+        {
+            //Trying to find ground from very high
+            legTargets[i].position = hit.point;
+        }
         else
         {
             Debug.DrawRay(legTargets[i].position, -transform.up * castDistance, Color.red);
@@ -224,7 +254,7 @@ public class AracneAI : MonoBehaviour
         }
 
     }
-    void CheckHandle(int i)
+    void CheckLegHandle(int i)
     {
         if (!hasToMoveLegs[i])
         {
@@ -244,11 +274,11 @@ public class AracneAI : MonoBehaviour
         Debug.DrawLine(legTargets[i].position, legHandles[i].position, Color.red);
 
         //int oppositeIndex = 2*pairOfLegs-1 - i;
-        int oppositeIndex = i < pairOfLegs ? i+pairOfLegs : i-pairOfLegs;
-        if (!hasToMoveLegs[i] && distanceFromLeg > maxDistance && !hasToMoveLegs[oppositeIndex])
+        int oppositeIndex = i < pairsOfLegs ? i+pairsOfLegs : i-pairsOfLegs;
+        if (!hasToMoveLegs[i] && distanceFromLeg > stepGap && !hasToMoveLegs[oppositeIndex])
         {
             //check if the neighbouring leg (i+1) isn't moving, excluding front legs
-            if ((i+1)%pairOfLegs == 0 || !hasToMoveLegs[i+1])
+            if ((i+1)%pairsOfLegs == 0 || !hasToMoveLegs[i+1])
             {
                 hasToMoveLegs[i] = true;
             }
@@ -256,16 +286,16 @@ public class AracneAI : MonoBehaviour
 
         if (hasToMoveLegs[i])
         {
-            if (distanceFromLeg < 0.1f || distanceFromLeg > maxDistance*3)
+            if (distanceFromLeg < 0.1f || distanceFromLeg > stepGap*3)
             {
                 legHandles[i].position = legTargets[i].position;
                 hasToMoveLegs[i] = false;
             }
-            else if (distanceFromLeg > maxDistance*2f)
+            else if (distanceFromLeg > stepGap*2f)
             {
                 legHandles[i].position = Vector3.MoveTowards(legHandles[i].position, legTargets[i].position, Time.deltaTime*legSpeed*3f);
             }
-            else if (distanceFromLeg > maxDistance*0.7f) //first moving the leg up, before aiming to target directly
+            else if (distanceFromLeg > stepGap*0.7f) //first moving the leg up, before aiming to target directly
             {
                 legHandles[i].position = Vector3.MoveTowards(legHandles[i].position,
                         legHandles[i].position + (legTargets[i].position-legHandles[i].position)*.5f + transform.up*.4f,
@@ -284,19 +314,11 @@ public class AracneAI : MonoBehaviour
     {
         //TODO: maybe try with defaultHeight instead of currHeight
         //Vector3 candidateNextPos = averageLegsPos + bodyDefaultHeight*transform.up;
-        Vector3 candidateNextPos = transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up + transform.forward*this.GetComponent<MoveSpider>().currentSpeed*10;
+        Vector3 candidateNextPos = transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up + transform.forward*this.GetComponent<MoveAgent>().currentSpeed;
         //Debug.DrawLine(transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up, candidateNextPos, Color.red);
         Debug.DrawLine(bodyTransform.position, candidateNextPos, Color.green);
-        
-        //Handles.color = Color.green;
-        //Handles.matrix = Matrix4x4.TRS(transform.position,
-        //                                transform.rotation,
-        //                                transform.lossyScale);
-        //Handles.DrawWireCube(candidateNextPos, Vector3.one);
 
-        //Vector3 diff = (candidateNextPos - lastValidBodyPos);
-
-        this.GetComponent<MoveSpider>().isBlocked = false;
+        this.GetComponent<MoveAgent>().isBlocked = false;
         
         // try to move the body just in the next position, without affecting the body height
         //willBodyHit = Physics.BoxCast(lastValidBodyPos, bodyBox.size*.5f, diff.normalized, out bodyHit, transform.rotation, viewDistance, whatIsGround);
@@ -347,7 +369,7 @@ public class AracneAI : MonoBehaviour
             }
             // if here, no free space available
             Debug.Log("Warning: unable to avoid the obstacle");
-            this.GetComponent<MoveSpider>().isBlocked = true;
+            this.GetComponent<MoveAgent>().isBlocked = true;
             return bodyCurrHeight;
         }
     }
@@ -374,16 +396,16 @@ public class AracneAI : MonoBehaviour
         if(!Application.isPlaying)
         {
             float legGap = bodyLength;
-            if (pairOfLegs>1)
+            if (pairsOfLegs>1)
             {
-                legGap = bodyLength*2f/(float)(pairOfLegs-1);
+                legGap = bodyLength*2f/(float)(pairsOfLegs-1);
             }
             Vector3 pos;
             Vector3 dir;
 
-            for (int i=0; i < pairOfLegs; i++)
+            for (int i=0; i < pairsOfLegs; i++)
             {
-                dir = pairOfLegs<2 ? new Vector3(bodyWidth,0,0) : new Vector3(bodyWidth,0,i*legGap - bodyLength);
+                dir = pairsOfLegs<2 ? new Vector3(bodyWidth,0,0) : new Vector3(bodyWidth,0,i*legGap - bodyLength);
                 pos = bodyTransform.position;// + new Vector3(bodyWidth,0,i*legGap - bodyLength);
 
                 Gizmos.color = Color.yellow;
