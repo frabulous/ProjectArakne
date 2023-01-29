@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -22,6 +23,51 @@ public class Ground : MonoBehaviour
     [SerializeField] private MeshFilter meshFilter;
 
     private MeshCollider meshCollider;
+
+    
+    private void OnEnable()
+    {
+        //print("enabled!");
+        float backupStrength = shape_sets.NoiseSettings.strength;
+        shape_sets.NoiseSettings.strength = 0f;
+        OnShapeUpdated();
+        StartCoroutine(RaiseStrength(backupStrength, 1.9f));
+    }
+    public void OnDisable() 
+    {
+        //print("disabled!");
+        float backupStrength = shape_sets.NoiseSettings.strength;
+        StopAllCoroutines();
+        //shape_sets.NoiseSettings.strength = 0f;
+        //OnShapeUpdated();
+        //StartCoroutine(RaiseStrength(0f, 1.99f));
+        //StartCoroutine(WaitAndSetStrength(backupStrength, 2.0f));
+    }
+
+    IEnumerator RaiseStrength(float targetStrength, float animSeconds)
+    {   
+        float startStrength = shape_sets.NoiseSettings.strength; // = 0f;
+        float t = 0f;
+        while (t <= animSeconds)
+        {
+            t += Time.deltaTime;
+            float percent = Mathf.Clamp01(t / animSeconds);
+            
+            shape_sets.NoiseSettings.strength = 
+                Mathf.Lerp(startStrength, targetStrength, percent);
+
+            OnShapeUpdated();
+
+            yield return null;
+        }
+        shape_sets.NoiseSettings.strength = targetStrength;
+    }
+    IEnumerator WaitAndSetStrength(float targetStrength, float seconds)
+    {
+        yield return new WaitForSeconds(seconds);
+        shape_sets.NoiseSettings.strength = targetStrength;
+        this.gameObject.SetActive(false);
+    }
 
     void Start()
     {

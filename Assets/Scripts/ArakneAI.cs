@@ -4,38 +4,51 @@ using UnityEngine;
 
 public class ArakneAI : MonoBehaviour
 {
-    [Header("Setup")]
+    [Header("[Setup]")]
+    [Space(10)]
 
     public Transform bodyDummy;
     [SerializeField] private GameObject legPrefab, handlePrefab, polePrefab, targetPrefab;
     private FabrIK[] leafBones;
 
     [SerializeField] private Transform bodyTransform, legsTransform;
-    [SerializeField] private float bodyWidth, bodyLength;
+    [SerializeField][Range(0.1f,2.0f)] private float bodyWidth =.75f, bodyLength=.9f;
     [SerializeField] private float handleDistance;
     [SerializeField] private Vector3 poleDelta;
+    [SerializeField] private LayerMask whatIsGround;
 
     private const float MIN_bodyHeight = 1f, MAX_bodyHeight = 4f;
-    [Header("Settings")]
     [SerializeField][Range(MIN_bodyHeight, MAX_bodyHeight)] private float bodyDefaultHeight;
-    [SerializeField][Range(MIN_bodyHeight, MAX_bodyHeight)] private float bodyCurrHeight;
 
+    [Space(10)]
+
+    [Header("[Number of pairs of legs]")]
     [SerializeField][Range(1,6)] private int pairsOfLegs;
+
+    [Space(10)]
+
+    [Header("[Other Settings]")]
+    
+    [Space(10)]
+
+    [SerializeField][Range(MIN_bodyHeight, MAX_bodyHeight)] private float bodyCurrHeight;
     private float castDistance = 10f;
     /// <summary>
     ///  Max altitude difference allowed
     /// </summary>
+    [Tooltip("Max altitude difference allowed")]
     [SerializeField] float maxStepHeight = 4f;
     Vector3 castOffset;
     /// <summary>
     ///  Limit distance from handle to target before triggering the step animation
     /// </summary>
+    [Tooltip("Limit distance from handle to target before triggering the step animation")]
     [SerializeField][Range(1.2f, 1.9f)] private float stepGap = 1.3f;
     /// <summary>
     ///  The step animation speed
     /// </summary>
+    [Tooltip("The step animation speed")]
     [SerializeField] private float legSpeed = 20f;
-    [SerializeField] private LayerMask whatIsGround;
 
     private float averageLegsHeight;
     private Vector3 averageLegsPos;
@@ -56,6 +69,8 @@ public class ArakneAI : MonoBehaviour
 
     void Start()
     {
+        transform.position = new Vector3(transform.position.x, 0f, transform.position.z);
+
         bodyBox = bodyTransform.GetComponent<BoxCollider>();
         bodyCurrHeight = bodyTransform.localPosition.y;
         lastValidBodyPos = bodyTransform.position + Vector3.up*bodyDefaultHeight;
@@ -78,8 +93,11 @@ public class ArakneAI : MonoBehaviour
 
     void LateUpdate()
     {
+        transform.position = new Vector3(transform.position.x, 0f, transform.position.z);
+
         //averageLegsPos = Vector3.zero;
         averageLegsHeight = 0f;
+        //int count = 0;
         // UPDATE LEGS
         for (int i=0; i < pairsOfLegs; i++)
         {
@@ -91,30 +109,38 @@ public class ArakneAI : MonoBehaviour
             CheckLegTarget(j);
             CheckLegHandle(j);
             leafBones[j].SolveIK();
+            
+            /*if(!hasToMoveLegs[i]) {
+                averageLegsHeight += legHandles[i].position.y;
+                count++;
+            }
+            if(!hasToMoveLegs[j]) {
+                averageLegsHeight += legHandles[j].position.y;
+                count++;
+            }*/
 
-            //averageLegsPos = (averageLegsPos + (legHandles[j].position + legHandles[i].position)*.5f)*.5f;
-            //averageLegsHeight = (averageLegsHeight + (legHandles[j].position.y + legHandles[i].position.y)*.5f)*.5f;
             averageLegsHeight += (legHandles[j].position.y + legHandles[i].position.y)*.5f;
         }
         averageLegsHeight /= pairsOfLegs;
-        
-        //if (isBodyAnimating) return;
+        //if(count!=0) averageLegsHeight /= (float)count;
 
         // UPDATE BODY
         float nextBodyY = UpdateBody();
+        
         bodyDummy.position = lastValidBodyPos;
-        if (Mathf.Abs(nextBodyY - bodyCurrHeight) > .05f)
+
+        float bodyHeightDelta = Mathf.Abs(nextBodyY - bodyCurrHeight);
+        if (bodyHeightDelta > .05f)
         {
             //if(bodyAdjustHeight!=null) StopCoroutine(bodyAdjustHeight);
-            //bodyAdjustHeight = StartCoroutine(PlaceBodyAt(nextBodyY, .2f));
             if (!bodyAdjustCRisRunning)
                 bodyAdjustHeight = StartCoroutine(PlaceBodyAt(nextBodyY, .4f));
         }
         //bodyCurrHeight = nextBodyY;
 
         //Vector3 bodyPos = new Vector3(transform.position.x, transform.position.y + averageLegsHeight + bodyCurrHeight, transform.position.z);
+
         Vector3 bodyPos = transform.position + (averageLegsHeight + bodyCurrHeight)*transform.up;
-        
         bodyTransform.position = bodyPos;
     }
 
@@ -269,13 +295,14 @@ public class ArakneAI : MonoBehaviour
         }
         
         // check the distance from target
-        float distanceFromLeg = (legTargets[i].position - legHandles[i].position).magnitude;
+        float sqrDistanceFromLeg = (legTargets[i].position - legHandles[i].position).sqrMagnitude;
+        float sqrStepGap = stepGap*stepGap;
         //Debug.Log("distance from leg: " + distanceFromLeg);
         Debug.DrawLine(legTargets[i].position, legHandles[i].position, Color.red);
 
         //int oppositeIndex = 2*pairOfLegs-1 - i;
         int oppositeIndex = i < pairsOfLegs ? i+pairsOfLegs : i-pairsOfLegs;
-        if (!hasToMoveLegs[i] && distanceFromLeg > stepGap && !hasToMoveLegs[oppositeIndex])
+        if (!hasToMoveLegs[i] && sqrDistanceFromLeg > sqrStepGap && !hasToMoveLegs[oppositeIndex])
         {
             //check if the neighbouring leg (i+1) isn't moving, excluding front legs
             if ((i+1)%pairsOfLegs == 0 || !hasToMoveLegs[i+1])
@@ -286,16 +313,16 @@ public class ArakneAI : MonoBehaviour
 
         if (hasToMoveLegs[i])
         {
-            if (distanceFromLeg < 0.1f || distanceFromLeg > stepGap*3)
+            if (sqrDistanceFromLeg < 0.1f || sqrDistanceFromLeg > sqrStepGap*9)
             {
                 legHandles[i].position = legTargets[i].position;
                 hasToMoveLegs[i] = false;
             }
-            else if (distanceFromLeg > stepGap*2f)
+            else if (sqrDistanceFromLeg > sqrStepGap*4f)
             {
                 legHandles[i].position = Vector3.MoveTowards(legHandles[i].position, legTargets[i].position, Time.deltaTime*legSpeed*3f);
             }
-            else if (distanceFromLeg > stepGap*0.7f) //first moving the leg up, before aiming to target directly
+            else if (sqrDistanceFromLeg > sqrStepGap*0.49f) //first moving the leg up, before aiming to target directly
             {
                 legHandles[i].position = Vector3.MoveTowards(legHandles[i].position,
                         legHandles[i].position + (legTargets[i].position-legHandles[i].position)*.5f + transform.up*.4f,
@@ -312,9 +339,9 @@ public class ArakneAI : MonoBehaviour
 
     private float UpdateBody() // should be executed after updating legs
     {
-        //TODO: maybe try with defaultHeight instead of currHeight
         //Vector3 candidateNextPos = averageLegsPos + bodyDefaultHeight*transform.up;
         Vector3 candidateNextPos = transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up + transform.forward*this.GetComponent<MoveAgent>().currentSpeed;
+        Vector3 backupPos = candidateNextPos;
         //Debug.DrawLine(transform.position + (averageLegsHeight + bodyDefaultHeight)*transform.up, candidateNextPos, Color.red);
         Debug.DrawLine(bodyTransform.position, candidateNextPos, Color.green);
 
@@ -326,17 +353,19 @@ public class ArakneAI : MonoBehaviour
 
         if (!willBodyHit)
         {
-            // ok, we can move the body ahead and update the positions
+            //// OK, we can move the body ahead and update the positions
             lastValidBodyPos = candidateNextPos;
             return bodyCurrHeight;
         }
         else // check for free space, then offset the body accordingly
         {
-            Debug.Log("collision detected!");
+            //Debug.Log("collision detected!");
             float step = 0.15f; //the deltaY for each box-check
             
-            // try BELOW            
-            candidateNextPos = transform.position + (averageLegsHeight+bodyDefaultHeight - step)*transform.up;
+            //// try BELOW
+            ///
+            candidateNextPos = backupPos - transform.up*step;
+            //candidateNextPos = transform.position + (averageLegsHeight+bodyDefaultHeight - step)*transform.up;
             //candidateNextPos = averageLegsPos + (bodyCurrHeight - step)*transform.up;
 
             while(candidateNextPos.y >= averageLegsHeight + MIN_bodyHeight)
@@ -352,9 +381,11 @@ public class ArakneAI : MonoBehaviour
                 candidateNextPos -= transform.up*step;
             }
             
-            // no free space below, try ABOVE
-            candidateNextPos = transform.position + (averageLegsHeight+bodyDefaultHeight + step)*transform.up;
-            //candidateNextPos = averageLegsPos + (bodyCurrHeight + step)*transform.up;
+            //// no free space below, try ABOVE
+            ///
+            candidateNextPos = backupPos + transform.up*step;
+            //candidateNextPos = transform.position + (averageLegsHeight+bodyDefaultHeight + step)*transform.up;
+            
             while(candidateNextPos.y <= averageLegsHeight + MAX_bodyHeight)
             {
                 willBodyHit = Physics.CheckBox(candidateNextPos, bodyBox.size*.5f, transform.rotation, whatIsGround);
@@ -367,8 +398,9 @@ public class ArakneAI : MonoBehaviour
                 }
                 candidateNextPos += transform.up*step;
             }
-            // if here, no free space available
-            Debug.Log("Warning: unable to avoid the obstacle");
+            //// if here, no free space available
+            /// 
+            Debug.LogWarning("Warning: unable to avoid the obstacle");
             this.GetComponent<MoveAgent>().isBlocked = true;
             return bodyCurrHeight;
         }
@@ -377,7 +409,7 @@ public class ArakneAI : MonoBehaviour
     {
         bodyAdjustCRisRunning = true;
         //Vector3 startPos = bodyTransform.position;
-        float startY = bodyCurrHeight;
+        float startHeight = bodyCurrHeight;
         float t = 0f;
         while (t <= animSeconds)
         {
@@ -385,11 +417,37 @@ public class ArakneAI : MonoBehaviour
             float percent = Mathf.Clamp01(t / animSeconds);
             
             //bodyTransform.position = Vector3.Lerp(startPos, targetPos, percent);
-            bodyCurrHeight = Mathf.Lerp(startY, targetHeight, percent);
+            bodyCurrHeight = Mathf.Lerp(startHeight, targetHeight, percent);
             yield return null;
         }
         bodyAdjustCRisRunning = false;
     }
+    /*IEnumerator Jump(float targetHeight, float animSeconds)
+    {
+        float startHeight = bodyCurrHeight;
+        float t = 0f;
+        while (t <= animSeconds)
+        {
+            t = t + Time.deltaTime;
+            float percent = Mathf.Clamp01(t / animSeconds);
+            
+            //bodyTransform.position = Vector3.Lerp(startPos, targetPos, percent);
+            bodyCurrHeight = Mathf.Lerp(startHeight, MIN_bodyHeight, percent);
+            yield return null;
+        }
+        yield return new WaitForSeconds(.5f);
+        
+        t=0f;
+        while (t <= animSeconds)
+        {
+            t = t + Time.deltaTime;
+            float percent = Mathf.Clamp01(t / animSeconds);
+            
+            //bodyTransform.position = Vector3.Lerp(startPos, targetPos, percent);
+            bodyCurrHeight = Mathf.Lerp(MIN_bodyHeight, targetHeight, percent);
+            yield return null;
+        }
+    }*/
 
     private void OnDrawGizmos()
     {

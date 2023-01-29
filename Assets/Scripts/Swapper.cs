@@ -16,6 +16,7 @@ public class Swapper : MonoBehaviour
         }
         else
         {
+            //obj2.GetComponent<Ground>().OnDisable();
             obj2.SetActive(false);
             obj1.SetActive(true);
         }

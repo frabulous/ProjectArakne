@@ -5,6 +5,7 @@ using UnityEngine;
 public class NoiseTuner
 {
     Noise noise = new Noise();
+    //NoiseV2 noise = new NoiseV2();
     NoiseSettings settings;
 
     public NoiseTuner(NoiseSettings settings)

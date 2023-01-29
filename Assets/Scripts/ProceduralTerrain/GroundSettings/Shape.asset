@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   size: 200
   NoiseSettings:
-    strength: -7.34
-    baseRoughness: 6.7
-    roughness: 2.8
-    center: {x: 7.1, y: 0.68, z: 0}
-    numHarmonics: 4
-    decayRate: 0.25
+    strength: 10
+    baseRoughness: 9.23
+    roughness: 3.28
+    center: {x: 0, y: 0, z: 0}
+    numHarmonics: 3
+    decayRate: 0.14
     minValue: 0.3
