@@ -8,7 +8,7 @@
 - Conclusioni e eventuali sviluppi futuri.
 
 By Vincenzo:
-dai, conoscendo il progetto si tratta di vomitare tutto quello che hai fatto, e i processi logici che ti hanno guidato per le scelte di progettazione
+vomitare tutto quello che hai fatto, e i processi logici che ti hanno guidato per le scelte di progettazione
 
 io solitamente seguo quest’ordine: 
 * abstract in cui spieghi molto brevemente di cosa tratta il progetto
@@ -20,11 +20,9 @@ io solitamente seguo quest’ordine:
 * references
 
 ## Abstract
-**~~ Agente simil-ragno con un numero di zampe personalizzabile e che si muove su terreno accidentato con posizionamento procedurale delle zampe in base alla superficie di appoggio.
-Saranno testati due tipi di terreno: uno procedurale, generato tramite rumore, e uno che userà delle mesh come rilievi e asperità su terreno pianeggiante.
-L'agente sarà anche in grado di alzarsi o abbassarsi al fine di evitare ostacoli*~~
 
-This report presents a spider-like agent (with a customizable number of legs) that is able to move on rough terrain. The agent's movement is based on procedural positioning of its legs according to the surface it is on, with the ability to adapt by rising or lowering its body to avoid obstacles.
+This report presents a spider-like agent that is able to move on rough terrain. The agent's movement is based on procedural positioning of its legs according to the surface it is on, with the ability to adapt by rising or lowering its body to avoid obstacles.
+The agent
 Two types of terrain will be tested: one generated procedurally using noise and one that uses meshes to create elevations and roughness on a flat ground.
 The goal of this study is to demonstrate how procedural techniques can be used to create realistic and adaptive movement
 
@@ -36,39 +34,21 @@ Procedural animation is a technique used in video games to generate animations o
 
 One common use of procedural animation is in the movement of characters and creatures. For example, in a game featuring a wide variety of enemy types, each with its own unique movement patterns, it would be impractical to pre-animate every possible movement for every enemy. Instead, a procedural animation system can be used to generate the animation for each enemy based on its movement patterns and physical properties.
 
-Another example of the use of procedural animation is in the simulation of natural phenomena such as fire, water, and cloth. These types of animations can be difficult to pre-animate and often require a high degree of realism. In these cases, a procedural animation system can be used to generate the animation on the fly, using physical simulations to produce realistic and unpredictable results.
+Another example of the use of procedural animation is in the simulation of natural phenomena such as fire, water, and cloth.
 
 ### Procedural assets
 Procedural asset generation is a technique used in video games to generate game assets, such as textures, models, and levels, on the fly, rather than pre-creating them. This allows for a greater degree of flexibility and variability in the game's content. With this technique, the game can generate unique and complex assets without the need of manual creation, saving time and resources.
 
 ## Project Development
+
+### Agent presentation
+
+Dall'inspector, l'utente può regolare le dimensioni del corpo tramite i parametri bodyWidth e bodyLength.
+Può decidere il numero di zampe dell'agente regolando la variabile pairsOfLegs.
+
 AI Design divided in subproblems:
 ### Legs IK: personal implementation**
 #### What is IK / FK
-*Forward kinematics:
- Single solution exists
- An example is going from Local Transform to Final Transform
-Inverse Kinematics:
- it’s more difficult to solve
-(as it’s often the case with inverse problems!)
- Often, trivial solutions are all that we need in Games:
-e.g., just two bones (for articulated legs, or arms)
- Multiple solutions exists: which one to pick?
- Disambiguate with additional constraint,
-such as: minimize the distance from
-the intermediate bone to a given attractor position
-IK has many uses:
- in preprocessing (helping the task of the animator)
- in real time (performed by the game engine)
- Examples of real-time uses:
- Exact positioning of feet on ground
- Exact positioning of hand to object to be grabbed
- Hands need to be joined
-(e.g. 2-handed weapon wielding)
- (e.g., making the system auto-correct for small changes in
-bone lengths – helps animation retargeting)
- (e.g., during interpolated keyframes)
- Helps attack animation “connect” with target*~~
 
 Forward Kinematics (FK) and Inverse Kinematics (IK) are two techniques used in the animation of characters and objects in video games.
 
@@ -108,7 +88,7 @@ The first one is the easiest case: we just need to start from the root and align
 In the second case we would like the leaf bone to copy the taget location and the rest of the limb bend accordingly. So the leaf is put in the same position of the handle, then it tries to adjust the position of its parent accordingly, which tries to adjust its parent position consequently, and so on up to the root bone with a backwards cascading effect. Then, the same process is applied forward from root to leaf (the root is skipped because we want to keep it in place). This produces an approximation of the ideal position for each bone in the chain.
 The process can be repeated a desired number of times (*iterations*) to improve the approximation; also we can stop the computation as soon as the leaf bone and the handle are closer than a desired *delta*.
 
-The following is an abstraction of the implemented algorithm:
+The following is an abstraction of the implemented algorithm inside our **FabrIK** Script:
 * For each iteration, we perform the main steps:
   1. Backward step:
      * we set the position of the last bone in the chain (the "leaf" bone) to the target position;
@@ -117,7 +97,7 @@ The following is an abstraction of the implemented algorithm:
      * For each bone in the chain (starting from the second bone), we set the bone's position to be along the line connecting it to its parent bone, using the parent bone's length to determine the exact position;
   3. Check: after each iteration, we check if the distance between the target and the leaf bone is smaller than *delta*. If so, it breaks out of the loop, as the bone positions are considered close enough to the target.
 
-Pole vector!**
+##### Needing a Pole vector
 
 In some cases the obtained solution could appear unnatural, resulting in a "broken leg" effect.
 
@@ -133,7 +113,7 @@ So the algorithm iterates through the bones of the limb, excluding the root and 
 
 TODO: pole and bone projections on the plane
 
-#### FastIK Script manual
+#### FabrIK Script manual
 ==========================
 Add the component to the last chain element for your IK chain and set the values.
 
@@ -148,43 +128,70 @@ During runtime you can move the target and the pole. You could also move the fir
 
 
 ### Perform a step*
-ogni handle avrà un target. L'handle tenderà a raggiungerlo solo quando si troverà al disopra di una certa distanza massima stabilita.
-Per l'animazione del passo, una prima soluzione potrebbe essere quella di interpolare linearmente nel tempo (stabilita una durata del passo o una speedLeg) la posizione dell'handle con quella del target. Il risultato è accettabile ma l'effetto è quello di una zampa che scivola lungo il terreno, senza staccarsi da terra. Per un passo più verosimile vorremmo che durante il movimento la zampa si sollevasse in aria, tracciando una sorta di parabola, per poi toccare terra solo una volta giunta in posizione.
-Quindi la direzioniamo nella prima metà del tratto verso l'alto, solo dopo verso la posizione effettiva del target.
 
-### Make legs stay grounded
-Raycast
+In order to allow our IK leg to step, for each leg we associate a *target* Transform to the leg handle. This target is parented to the agent, so it will move forward along with the body, while the handle remains stationary in position. Only when the distance between the handle and the target exceeds the "*stepGap*" threshold, then the relative leg enters the "*hasToMoveLeg*" state: the handle will then be moved and will tend to reach the target, resulting in the animation of a step.
+
+TODO: foto ragno con zoom su leg handle mentre raycast to target
+
+For the step animation, a first solution could be to linearly interpolate in time between the position of the handle and the target (given a *legSpeed*). The result is acceptable but the effect is that of a leg that slides along the ground, without lifting off.
+For a more realistic step, we would like the leg to lift off the ground, tracing some curve, and then touch the ground only once it reaches the target position.
+Therefore, for the first half of the path, we direct the handle forward towards the target but adding an upward component; only after the half of the path, once the leg tip will be in the air, we will interpolate in time its position with the actual position of the target.
+
+TODO: figura slide vs curve trajectory
+
+It should be noted that, in the event that too much distance has accumulated between the handle and the target, the step animation is accelerated; in extreme cases, the handle is instantly teleported into final position, to preserve the organicity of the model rather than the realism of the step.
+
+### Make legs follow the surface
+Vogliamo fare in modo che, durante l'esecuzione, ogni zampa poggi a terra correttamente, seguendo la forma del terreno.
+Dunque definiamo in Unity un Layer chiamato Ground, che assegneremo ad ogni gameobject su cui vogliamo che il nostro agente possa poggiarsi. 
+Nel nostro script **ArakneAI** aggiungiamo quindi una LayerMask, chiamata *whatIsGround*, a cui andremo ad assegnare il layer Ground da Inspector. 
+Il nostro approccio sarà quello di fare un raycast dalla punta della zampa verso il basso, al fine di intercettare il terreno e posizionare la legHandle nel punto di collsione.
+TODO
+Aggiungiamo anche una variabile maxStepHeight per regolare il dislivello massimo che il nostro agente può gestire
+
 ### Generate a spider with n pairs of legs
 use params to decide
 find the correct step along spider body
+
 ### Make the spider step in a believable way*
-- step only if opposite is grounded
-- step only if next is grounded
+At this point, it might already be enough to apply a translation to our agent, and we would see that, at some point, when the distance between the handles and the targets exceeds the stepGap value, each leg performs the step animation. However, the problem now is that all legs move simultaneously. 
+
+Instead, we would like a more realistic behavior. Legs should move in a cyclic sequence, and no leg should step if the opposite is already performing a step.
+
+We use this [walking spider 2d animation by Richard Williams](https://www.youtube.com/watch?v=GtHzpX0FCFY) as a reference.
+TODO: foto video
+
+With that said, we can extend our code with the following improvements:
+
+1. Leg targets are poisitioned in an organic zigzag pattern
+2. Each leg is only allowed to take a step only if the opposite leg in the pair is grounded
+3. Each leg is only allowed to take a step if the leg in front of it is on the ground.
+
+##### Organic zigzag target displacement
+In the `InitLegs()`, after our algorithm has instatiated and set up each leg, we add a last step so it loops through all of the pairs of legs in the character. For each pair, it moves one *legTarget* forward by a *deltaZ* displacement and the opposite *legTarget* backwards by the same amount. Then, for the next pair of legs, it flips the direction of *deltaZ* so that the next pair of legTargets will be mirrored.
+The consequence is that some legHandles will be ahead of their legTargets, while the others will be behind. This means that, when the agent will be moving, the step animation will be activated alternately for each pair of legs.
+
+TODO: foto zoommata target displacement
+
+We can add rules even while the program is running to ensure a more believable behavior even while moving.
+
+##### Step only if opposite is grounded
+At run-time, the `CheckLegHandle()` method also uses the *hasToMoveLegs* array of booleans to check the status of the opposite leg in the pair. If the opposite one is moving, the current one cannot.
+We add this rule so that two legs in the same pair are not in the air at the same time.
+
+##### Step only if next is grounded
+Let's add a further check in our `CheckLegHandle()` method so that two legs in a row cannot be in the air at the same time. So, for each leg (excluding the front legs), we use *hasToMoveLegs* array to check the status of the leg in front; if that one is moving, the current one cannot.
 
 
 ### Make the spider aim to a goal: simple movement behavior (seek + arriving)
-easy kinematic seek + arriving implementation explaination (MoveSpider class)
-
-Al fine di testare il comportamento dell'agente che si sposta nell'ambiente, si è scelto di usare un'implementazione semplice dei behaviour seek e arriving
-
-Un seek behavior gestisce il movimento dell' agente nell'ambiente. 
-Si possono settare i vari parametri:
-- la moveSpeed
-- il target Transform
-- slowDistance
-- stopDistance
-
-Dei gizmo sono stati utilizzati per rendere più intuitive le distanze
-
-**ENG:
  
-So, we wanted to check out how our agent behaves when we let it roam around in the environment. Since it's mainly for testing, an easy approach is to use a kinematic algorithm which combines the "seek" and "arriving" behaviours.
+So, we wanted to check out how our agent behaves when we let it roam around in the environment. Since it's mainly for testing, an easy approach is to use a kinematic algorithm like "arriving", which combines the simple "seek" behaviours.
 
 The Seek algorithm is used to make an agent move towards a target position. It computes the desired velocity by subtracting the agent current position from the target position and normalizing the result. This vector is then multiplied by the agent's maximum speed to obtain the final velocity. The agent's position is then updated by adding the velocity to it, so the result is that the agent will move in a straight line towards the target.
 
 The Arriving algorithm is similar to Seek, but it includes the concept of slowing down as the agent approaches the target. It calculates the distance between the agent and the target, and if this distance is less than a certain threshold, the agent's speed is scaled down proportionally to the distance. This creates a smooth slowing down effect as the agent approaches the target.
 
-The script has several public variables that can be set in the Unity editor:
+Our custom script has several public variables that can be set in the Unity editor:
 
 - *moveSpeed*: the maximum speed at which the spider should move towards its target
 - *target*: the Transform of the object that the spider should move towards
@@ -193,6 +200,8 @@ The script has several public variables that can be set in the Unity editor:
 
 The script also has a private variable, *currentSpeed*, which stores the current speed of the agent.
 Additionally, the boolean *isBlocked* is a flag controlled by ArakneAI and it is used to prevent the spider from moving when facing an insurmountable obstacle.
+
+Gizmos were used to make it easier to control the distances of the slowDownCircle (yellow) and the stopCircle (red).
 
 
 
@@ -274,6 +283,19 @@ Another approach to handle obstacle avoidance for legs using IK is to use a pote
 It is also important to consider the maximum range of motion of the legs and to ensure that the legs are not pushed into an unrealistic or impossible position by the obstacle avoidance algorithm.
 
 It's important to notice that the algorithm is dependent on the level of complexity of the game and the obstacle detection method used, but with proper implementation, it can enhance the realism of the agent's movement and make the game more immersive.
+
+## Conclusions: limits and possible improvements
+
+In conclusion, the agent behavior presented in this project, although limited, could already be considered sufficient to be used in a video game. For example, it could be a believable robotic NPC that wanders within the game world. Of course, when dealing with an AI agent, some parameters may need to be manually set up on the specific needs, and some level design constraints must be considered.
+
+On the other hand, if a more realistic agent is desired, then this model has some limitations, but is open to future expansion.
+One limitation is the obstacle avoidance system, which does not currently handle the edge case where the agent encounters an obstacle that is too high, causing it to stop. There are multiple solutions to this problem, depending on the need, such as creating and triggering a procedural jumping animation that allows the agent to overcome the obstacle; another alternative is to modify the movement behavior and make it a steering behavior to attempt to circumvent the obstacle on a horizontal plane, or expanding the movement system to allow the spider to move on vertical walls and climb the obstacle.
+
+Depending on how realistic we want the agent to be, another problem could be that the collision of the legs is only handled on the root and on the tip. This means that, in some extreme cases, the model of the limb could penetrate a nearby obstacle.
+One possible solution is to expand our IK solving system so that it also uses raycasting from one bone to the next to check for the presence of any colliders; which in turn would require the ability to find an alternative solution for the IK chain.
+ An alternative solution, faster to implement but less predictable, would be to use colliders for each segment of the leg (such as capsule colliders) and set appropriate constraints, leaving the final position of the bones to the physics engine.
+
+
 
 ## References:
 
