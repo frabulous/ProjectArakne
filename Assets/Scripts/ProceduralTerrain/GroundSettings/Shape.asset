@@ -16,8 +16,8 @@ MonoBehaviour:
   NoiseSettings:
     strength: 10
     baseRoughness: 9.23
-    roughness: 3.28
+    roughness: 0.9
     center: {x: -8.9, y: -12.9, z: 0}
-    numHarmonics: 2
-    decayRate: 0.14
-    minValue: 0.3
+    numHarmonics: 3
+    decayRate: 0.11
+    minValue: 0.32

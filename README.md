@@ -1,23 +1,5 @@
-# AI4VG - Project Documentation
+​# AI4VG - Project Documentation
 ###### tags: `UniMi`
-- Introduzione in cui ho spiegato le specifiche del progetto concordate con maggiorini;
-- Breve Overview di game design del progetto (in cosa consiste il gioco, meccaniche, scopo del gioco, target audience);
-- Design dell’AI, in cui ho spiegato tutti i behaviours necessari
-- AI model: ho preso lo schema visto a lezione e l’ho adattato al mio progetto;
-- Implementazione AI: per ogni modulo dell’AI model (decision making, movement, ecc...) ho spiegato brevemente le tecniche usate, come ho implementato quel modulo e perché ho fatto certe scelte;
-- Conclusioni e eventuali sviluppi futuri.
-
-By Vincenzo:
-vomitare tutto quello che hai fatto, e i processi logici che ti hanno guidato per le scelte di progettazione
-
-io solitamente seguo quest’ordine: 
-* abstract in cui spieghi molto brevemente di cosa tratta il progetto
-* introduzione in cui racconti leggermente più nel dettaglio cosa hai fatto e un minimo di spiegazione allo “stato dell’arte” del tipo “storical background”
-* spieghi l’approccio del paper/progetto di riferimento
-* racconti le differenze con la tua implementazione
-* spieghi le eventuali feature aggiuntive
-* conclusioni
-* references
 
 ## Abstract
 
@@ -26,7 +8,7 @@ Two types of terrain will be tested: one generated procedurally using noise and 
 The goal of this project is to demonstrate how procedural techniques can be used to create believable and adaptive movement.
 
 ## Introduction
-1) What is procedural animation, where/when is it used?
+What is procedural animation, where/when is it used?
 
 ### Procedural animations
 Procedural animation is a technique used in video games to generate animations on the fly, rather than pre-animating them. This allows for a greater degree of flexibility and realism in the game's animation system.
@@ -44,7 +26,8 @@ Procedural asset generation is a technique used in video games to generate game 
 
 The spider-like agent for this Unity project will be portrayed by a gameobject named *ArakneAgent* and having the following structure.
 
-TODO: figura hierarchy (semplificata)
+![Agent hierarchy (simplified)](https://i.imgur.com/kp9ANR2.png)
+
 
 Its main child gameobjects are:
 
@@ -104,9 +87,11 @@ Despite its limitations, the FABRIK algorithm remains a popular choice for IK so
 #### Implementation
 Let's abstract a limb as a chain made up of a customizable number of joints (we call this number *chainLength*) connecting a serie of *chainLength+1* nodes together, arranged in a straight line and parented one to the other from root to leaf.
 
-TODO: figure of a leg chain
+![Leg chain](https://i.imgur.com/c1RxeAX.png)
 
-We use an array to store the lengths of each joint, that is the distances between one node and the next in the chain. The sum of all these distances will give us the overall length of the limb; we call it *completeLength*.
+
+
+We use an array to store the lengths of each joint, that is the distances between one node and the next in the chain. The sum of all these distances will give us the overall length of the limb; we call it *fullLength*.
 
 Then let's add a separate Transform called *handle* to act as the target for the tip of our limb.
 So now, basically, each time the *handle* is moved we can have two possible situations:
@@ -132,7 +117,8 @@ The following is an abstraction of the implemented algorithm inside our **FabrIK
 
 In some cases the obtained solution could appear unnatural, resulting in a "broken leg" effect.
 
-TODO: broken leg figure?
+![Not a great leg positioning, unless we want a mosquito agent](https://i.imgur.com/QjoL6Ef.png)
+
 
 In order to address this issue, a further geometric computation is added: we'll take into account also another point in the space, that is the position of a given *pole* Transform. 
 So the algorithm iterates through the bones of the limb, excluding the root and leaf bones, and proceeds as follows:
@@ -142,7 +128,8 @@ So the algorithm iterates through the bones of the limb, excluding the root and 
 3. It calculates the angle between the line connecting the projected bone position to its parent and the line connecting the projected pole position to its parent.
 4. It rotates the current bone position around the normal of the plane by this angle and updates the current bone position to the new position.
 
-TODO: pole and bone projections on the plane
+![projections](https://i.imgur.com/2KZQ6uj.png)
+
 
 #### FabrIK Script manual
 ==========================
@@ -162,13 +149,15 @@ During runtime you can move the target and the pole. You could also move the fir
 
 In order to allow our IK leg to step, for each leg we associate a *target* Transform to the leg handle. This target is parented to the agent, so it will move forward along with the body, while the handle remains stationary in position. Only when the distance between the handle and the target exceeds the "*stepGap*" threshold, then the relative leg enters the "*hasToMoveLeg*" state: the handle will then be moved and will tend to reach the target, resulting in the animation of a step.
 
-TODO: foto ragno con zoom su leg handle mentre raycast to target
+![](https://i.imgur.com/ivRWb2u.png)
+
 
 For the step animation, a first solution could be to linearly interpolate in time between the position of the handle and the target (given a *legSpeed*). The result is acceptable but the effect is that of a leg that slides along the ground, without lifting off.
 For a more realistic step, we would like the leg to lift off the ground, tracing some curve, and then touch the ground only once it reaches the target position.
 Therefore, for the first half of the path, we direct the handle forward towards the target but adding an upward component; only after the half of the path, once the leg tip will be in the air, we will interpolate in time its position with the actual position of the target.
 
-TODO: figura slide vs curve trajectory
+![sliding vs raising](https://i.imgur.com/ZKCaMnr.png)
+
 
 It should be noted that, in the event that too much distance has accumulated between the handle and the target, the step animation is accelerated; in extreme cases, the handle is instantly teleported into final position, to preserve the organicity of the model rather than the realism of the step.
 
@@ -181,25 +170,33 @@ The only issue is that is that we cannot give for granted that such a raycast al
 
 In order to do so, we need to slightly offset the origin of the raycast along the vertical axis by a custom value, which we can tune according to our level design. Therefore, we add a variable called *maxStepHeight* to our script for this purpose; we will use it to regulate the maximum altitude difference that our agent will be able to handle.
 
-TODO: img raycast legTargets
+![raycast to legTarget](https://i.imgur.com/723ems8.png)
+
 
 Now, let's add an extra check since we want to ensure that not only the position at the next step is correct, but also the current position of each legHandle. This is because the ground that our agent is standing on may change in real-time under its feet.
 So, inside *CheckLegHandle()*, we can use the same raycast approach to find the closest point on the ground for each legHandle and put it in the correct position.
 Be careful to do it only if the relative *hasToMoveLeg* is false, beacause we do not want to stick the leg on the ground while performing the step animation.
 
+![result](https://i.imgur.com/k6hm5ly.png)
+
+
 
 ### Generate a spider with n pairs of legs
-When the method TODO
-use params to decide
-find the correct step along spider body
+In order to generate the desired number of limbs, our ArakneAI handles the instantiation (and the destruction) on demand of the leg prefabs and all the others gameobjects associated, like legHandles, legPoles and legTargets.
+
+When the value of *pairsOfLegs* is changed by the user, the method InitLegs() is called. So the algorithm destroys all pre-existing gameobjects and resets the arrays that refer to legs. Then, new leg prefabs are instantiated. 
+To find the correct position for the leg roots and place them evenly spaced along the body length, we compute the legGap. It is proportional to bodyLength/(pairsOfLegs-1).
+To place the leg tips in a circular shape, we compute a direction for each leg. This direction is obtained normalizing the vector with origin in the body center and pointing to the leg root position. So we use this direction scaled by *handleDistance* to position the legHandle; then we add the *poleDelta* vector to position the legPole.
 
 ### Make the agent take a step in a believable way*
 At this point, it might already be enough to apply a translation to our agent, and we would see that, at some point, when the distance between the handles and the targets exceeds the stepGap value, each leg performs the step animation. However, the problem now is that all legs move simultaneously. 
 
 Instead, we would like a more realistic behavior. Legs should move in a cyclic sequence, and no leg should step if the opposite is already performing a step.
 
+![](https://i.imgur.com/ASa34DQ.png)
+
 We use this [walking spider 2d animation by Richard Williams](https://www.youtube.com/watch?v=GtHzpX0FCFY) as a reference.
-TODO: foto video
+
 
 With that said, we can extend our code with the following improvements:
 
@@ -211,7 +208,8 @@ With that said, we can extend our code with the following improvements:
 In the `InitLegs()`, after our algorithm has instatiated and set up each leg, we add a last step so it loops through all of the pairs of legs in the character. For each pair, it moves one *legTarget* forward by a *deltaZ* displacement and the opposite *legTarget* backwards by the same amount. Then, for the next pair of legs, it flips the direction of *deltaZ* so that the next pair of legTargets will be mirrored.
 The consequence is that some legHandles will be ahead of their legTargets, while the others will be behind. This means that, when the agent will be moving, the step animation will be activated alternately for each pair of legs.
 
-TODO: foto zoommata target displacement
+![targets displacement](https://i.imgur.com/eowwiFt.png)
+
 
 We can add rules even while the program is running to ensure a more believable behavior even while moving.
 
@@ -221,77 +219,6 @@ We add this rule so that two legs in the same pair are not in the air at the sam
 
 ##### Step only if next is grounded
 Let's add a further check in our `CheckLegHandle()` method so that two legs in a row cannot be in the air at the same time. So, for each leg (excluding the front legs), we use *hasToMoveLegs* array to check the status of the leg in front; if that one is moving, the current one cannot.
-
-
-### Make the agent move
- 
-So, we wanted to check out how our agent behaves when we let it roam around in the environment. Since it's mainly for testing, an easy approach is to use a kinematic algorithm like "arriving", which combines the simple "seek" behaviours.
-
-The Seek algorithm is used to make an agent move towards a target position. It computes the desired velocity by subtracting the agent current position from the target position and normalizing the result. This vector is then multiplied by the agent's maximum speed to obtain the final velocity. The agent's position is then updated by adding the velocity to it, so the result is that the agent will move in a straight line towards the target.
-
-The Arriving algorithm is similar to Seek, but it includes the concept of slowing down as the agent approaches the target. It calculates the distance between the agent and the target, and if this distance is less than a certain threshold, the agent's speed is scaled down proportionally to the distance. This creates a smooth slowing down effect as the agent approaches the target.
-
-Our custom script **MoveAgent** has several public variables that can be set in the Unity editor:
-
-- *moveSpeed*: the maximum speed at which the agent should move towards its target
-- *target*: the Transform that the agent should move towards
-- *slowDistance*: the distance at which the agent should start slowing down towards its target
-- *stopDistance*: the distance at which the agent should stop moving towards its target
-
-The script also has a private variable, *currentSpeed*, which stores the current speed of the agent.
-Additionally, the boolean *isBlocked* is a flag controlled by ArakneAI and it is used to prevent the spider from moving when facing an insurmountable obstacle.
-
-TODO: figura
-
-Gizmos were used to make it easier to control the distances of the slowDownCircle (yellow) and the stopCircle (red).
-
-
-The implementation inside MoveAgent works in the following way.
-At first, after checking if a target is assigned, it calculates the distance from the target in the xz plane. If the square of the distance is less than the square of stopDistance, the currentSpeed is set to 0. If the square of the distance is less than the square of slowDistance, the currentSpeed is linearly interpolated between 0 and moveSpeed based on the ratio of the square of the current distance to the square of slowDistance. If the square of the distance is greater than the square of slowDistance, the currentSpeed is just set to moveSpeed.
-
-Then the agent's Transform is rotated with the transform.LookAt() method so it looks at the target's position. Finally, the agent is moved with transform.MoveTowards(), that translates it in the forward direction based on the currentSpeed.
-
-### Creating enviroments where letting the spider move
-#### Environment 1: a Playground
-
-A flat terrain consisting of a plane, to which 3d models of various shapes have been added; they are positioned in such a way as to serve as elevated spots or as obstacles (on the ground or suspended). 
-Example: ladder.
-
-The ground plane has a PlaneCollider component in order to be detected by raycasting, as well as any other model has a Collider matching to its mesh.
-These elements also are put in a specific physics Layer: "Ground". It is used by the agent AI during the raycasting operations to distinguish ground objects from body parts.
-
-#### Environment 2: a Procedural, noise-based ground**
-For the second type of environment we are going to use noised-based terrain generation, that is a technique used in game development and other fields to procedurally create realistic and varied landscapes. The process makes use of mathematical noise functions - such as Perlin or Simplex noise - to generate a heightmap, which is then used to shape the terrain. This method allows for the creation of infinite, unique terrain with little manual input.
-
-##### Unity: mesh from script
-Even if Unity offers a built-in Terrain gameobject, it is actually an annoying asset to work with. That is because of many factors; its default size is very big and it is not easy to adjust. Also, the dedicated libraries
-
-So we take this as an opportunity to generate a mesh from code in Unity.
-When we create a `Mesh`, we have to provide at least two arrays:
-* one for the `vertices`  which contains all the points (Vector3 objects) that make up the shape in space. Using these vertices, the individual triangles are defined, each of which represents a face of the mesh.
-* and one for the `triangles`, that is made up of indices of the vertices array, which, grouped in threes, correspond to the faces of the mesh.
-
-TODO: figura vertices, triangles
-
-N.B: The order of the vertices in these groups is important because it defines the direction of traversing the perimeter of each triangle and, consequently, the direction of the normal vector for that face.
-
-In order to generate a custom flat lattice, we create the `PlaneMesh` class: it takes a desired `verticesDensity` and creates a 1x1 size mesh containing `verticesDensity*verticesDensity` evenly-spaced vertices.
-The generated square is centered in the origin, while the vertices array starts with the one in the bottom-left corner, having coordinates (-0.5, 0.0 ,-0.5).
-
-TODO: figura lattice xz plane
-
-* PlaneMesh is used by Ground script, attached to the actual gameobject for the terrain. Ground uses the resolution variable to control verticesDensity. Ground also adds a MeshRender component (required by Unity for the rendering) and a MeshCollider (for physics).
-* a
-* ScriptableObjects for Shape and Color
-* GroundEditor for custom editor
-* Noise: 
-  * Noise.cs (Simplex noise implementation, based on [this paper by Stefan Gustavson](http://staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf))
-  * NoiseSettings
-  * NoiseTuner
-  * ShapeGenerator
-
-
-##### Handling procedural generation from Unity Inspector (Sebastian Lague variant)
 
 
 ### Adjust body height depending on legs average position
@@ -312,6 +239,100 @@ The algorithm starts by trying to move the body below the current position and c
 If no free space is found below the current position, the algorithm then tries to move the body above the current position and checks for free space in increments of 0.15 units along the y-axis. If it finds a free space, it updates the last valid body position and returns the new body height.
 
 If no free space is found above or below the current position, the algorithm sets a flag that indicates that the spider is blocked and unable to avoid the obstacle, and returns the current body height. This flag can be used to prevent the spider from moving further and to trigger other actions such as playing an animation or a sound effect.
+
+
+### Make the agent move
+ 
+So, we wanted to check out how our agent behaves when we let it roam around in the environment. Since it's mainly for testing, an easy approach is to use a kinematic algorithm like "arriving", which combines the simple "seek" behaviours.
+
+The Seek algorithm is used to make an agent move towards a target position. It computes the desired velocity by subtracting the agent current position from the target position and normalizing the result. This vector is then multiplied by the agent's maximum speed to obtain the final velocity. The agent's position is then updated by adding the velocity to it, so the result is that the agent will move in a straight line towards the target.
+
+The Arriving algorithm is similar to Seek, but it includes the concept of slowing down as the agent approaches the target. It calculates the distance between the agent and the target, and if this distance is less than a certain threshold, the agent's speed is scaled down proportionally to the distance. This creates a smooth slowing down effect as the agent approaches the target.
+
+Our custom script **MoveAgent** has several public variables that can be set in the Unity editor:
+
+- *moveSpeed*: the maximum speed at which the agent should move towards its target
+- *target*: the Transform that the agent should move towards
+- *slowDistance*: the distance at which the agent should start slowing down towards its target
+- *stopDistance*: the distance at which the agent should stop moving towards its target
+
+The script also has a private variable, *currentSpeed*, which stores the current speed of the agent.
+Additionally, the boolean *isBlocked* is a flag controlled by ArakneAI and it is used to prevent the spider from moving when facing an insurmountable obstacle.
+
+![target destination](https://i.imgur.com/30O90xu.png)
+
+
+Gizmos were used to make it easier to control the distances of the slowDownCircle (yellow) and the stopCircle (red).
+
+
+The implementation inside MoveAgent works in the following way.
+At first, after checking if a target is assigned, it calculates the distance from the target in the xz plane. If the square of the distance is less than the square of stopDistance, the currentSpeed is set to 0. If the square of the distance is less than the square of slowDistance, the currentSpeed is linearly interpolated between 0 and moveSpeed based on the ratio of the square of the current distance to the square of slowDistance. If the square of the distance is greater than the square of slowDistance, the currentSpeed is just set to moveSpeed.
+
+Then the agent's Transform is rotated with the transform.LookAt() method so it looks at the target's position. Finally, the agent is moved with transform.MoveTowards(), that translates it in the forward direction based on the currentSpeed.
+
+
+### Creating enviroments where letting the spider move
+#### Environment 1: a Playground
+
+A flat terrain consisting of a plane, to which 3d models of various shapes have been added; they are positioned in such a way as to serve as elevated spots or as obstacles (on the ground or suspended). 
+Example: ladder.
+
+The ground plane has a PlaneCollider component in order to be detected by raycasting, as well as any other model has a Collider matching to its mesh.
+These elements also are put in a specific physics Layer: "Ground". It is used by the agent AI during the raycasting operations to distinguish ground objects from body parts.
+
+#### Environment 2: a Procedural, noise-based ground**
+For the second type of environment we are going to use noised-based terrain generation, that is a technique used in game development and other fields to procedurally create realistic and varied landscapes. The process makes use of mathematical noise functions - such as Perlin or Simplex noise - to generate a heightmap, which is then used to shape the terrain. This method allows for the creation of infinite, unique terrain with little manual input.
+
+For the implementation, we use a custom approach. We are going to generate the flat ground mesh from scratch. Then, we will use an opensource script for generating optimized Simplex noise, that we use to perturbate the heights of our terrain mesh vertices.
+
+The chosen approach is a re-working and adaptation of the implementation exposed by Sebastian Lague in his [Procedural Planet Generation serie](https://youtube.com/playlist?list=PLFt_AvWsXl0cONs3T0By4puYy6GM22ko8).
+
+With the purpose to be modular and highly customizable from the Inspect, the resulting implemented system is quiet complex and I will try to unravel it in the following paragraphs.
+
+##### Unity: mesh from script
+Even if Unity offers a built-in Terrain gameobject, it is actually an annoying asset to work with. That is because of many factors; its default size is very big and it is not easy to adjust. Also, the dedicated libraries
+
+So we take this as an opportunity to generate a mesh from code in Unity.
+When we create a `Mesh`, we have to provide at least two arrays:
+* one for the `vertices`  which contains all the points (Vector3 objects) that make up the shape in space. Using these vertices, the individual triangles are defined, each of which represents a face of the mesh.
+* and one for the `triangles`, that is made up of indices of the vertices array, which, grouped in threes, correspond to the faces of the mesh.
+
+![a mesh made of 2 triangles](https://i.imgur.com/HuFJxDj.png)
+
+
+> N.B: The order of the vertices in these groups is important because it defines the direction of traversing the perimeter of each triangle and, consequently, the direction of the normal vector for that face.
+
+In order to generate a custom flat lattice, we create the **PlaneMesh** class: it takes a desired `verticesDensity` and creates a 1x1 size mesh containing `verticesDensity*verticesDensity` evenly-spaced vertices.
+The generated square is centered in the origin, while the vertices array starts with the one in the bottom-left corner, having coordinates (-0.5, 0.0 ,-0.5).
+
+![plane xz lattice](https://i.imgur.com/yOtsJAV.png)
+
+
+PlaneMesh is used by Ground script, attached to the actual gameobject for the terrain, which is called 'ProcedutalGround'. Ground uses the *resolution* variable to control the *verticesDensity*. Ground also adds a MeshRender component (required by Unity for the rendering) and a MeshCollider (for physics collisions).
+
+To create a terrain mesh which can scale in size, we have to put the *size* parameter in our computation. Also, to create a rough terrain instead of a flat one, we have to perturbate the height of the vertices in our planar mesh.
+In order to do so, PlaneMesh calls for every vertex the method *FromUnitQuadToShape()* of the **ShapeGenerator** class. This method scales the 1x1 point multiplying its position by *size*; then, it applies a vertical offset computing and adding the *height* value.
+The value for the height is obtained by passing the 1x1 point to the *Evaluate()* method of another class, that is **NoiseTuner**. Here is where the different parameters for the noise function are used:
+* the amplitude is used to vertically scale the noise values
+* the frequency (*baseRoughness*) tells how rough the noise is
+* the octaves (*numHarmonics*) tells how many noise function calls sum up per point
+* the persistence (*decayRate*) scales down the amplitude for every additional octave
+* the lacunarity (*roughness*) scales down the frequency for every additional octave
+* the *minValue* is used to clamp the obtained noised value to allow flat low regions
+* the *strenght* is an additional scale factor for the final output to grant more control
+
+![ProceduralGround interface](https://i.imgur.com/XqhoZ90.png)
+
+
+The NoiseTuner gets the noise value for every octave from another method, which is *Noise.Evaluate()*. The **Noise.cs** script is part of libnoise-dotnet and it is ditributed under the GNU Lesser General Public License. This is an opensource implementation of Simplex Noise and it is based on [this paper by Stefan Gustavson](http://staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf).
+The Noise class has a method *Evaluate(Vector3 point)* that outputs a 3-dimensional Simplex Perlin noise. It contains many precomputed factors that should increase the computation. So this script allows us to change the parameters of our procedural ground also in real-time, with a relative impact on the framerate.
+
+![final rough terrain](https://i.imgur.com/K7BL3ly.png)
+
+
+Additional Scripts, like NoiseSettings and GroundEditor, as well as ScriptableObjects, like SettingsShape and SettingsColor, have been used just with the purpose to give more readability to the Inspector interface of our ProceduralGround.
+
+
 
 ### EXTRA: Possible ways for legs obstacle avoidance
 One way to handle obstacle avoidance for the agent's legs, which use IK for positioning, is to add collision detection to the legs' IK solver. This can be done by incorporating raycasting or spherecasting to check for obstacles in the path of the legs and adjusting the IK solution accordingly.
@@ -339,5 +360,8 @@ One possible solution is to expand our IK solving system so that it also uses ra
 
 ## References:
 
-* Millington, AI for videogames
+* AI for videogames, Ian Millington
+* Procedural Planet Generation, by Sebastian Lague: 
+    * [youtube serie](https://youtube.com/playlist?list=PLFt_AvWsXl0cONs3T0By4puYy6GM22ko8)
+    * [project on github](https://github.com/SebLague/Procedural-Planets)
 * [Simplex noise demystified, by Stefan Gustavson](http://staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf)
