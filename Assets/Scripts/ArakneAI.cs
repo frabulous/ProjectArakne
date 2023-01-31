@@ -132,7 +132,7 @@ public class ArakneAI : MonoBehaviour
 
             averageLegsHeight += (legHandles[j].position.y + legHandles[i].position.y)*.5f;
         }
-        averageLegsHeight /= pairsOfLegs;
+        averageLegsHeight /= (float)pairsOfLegs;
         //if(count!=0) averageLegsHeight /= (float)count;
 
         // UPDATE BODY

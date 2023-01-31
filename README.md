@@ -21,10 +21,9 @@ io solitamente seguo quest’ordine:
 
 ## Abstract
 
-This report presents a spider-like agent that is able to move on rough terrain. The agent's movement is based on procedural positioning of its legs according to the surface it is on, with the ability to adapt by rising or lowering its body to avoid obstacles.
-The agent
+This report presents a spider-like agent that is able to move on uneven grounds. The agent's movement is based on procedural positioning of its legs according to the surface it is on; also the agent's body can avoid obstacles by rising or lowering its position.
 Two types of terrain will be tested: one generated procedurally using noise and one that uses meshes to create elevations and roughness on a flat ground.
-The goal of this study is to demonstrate how procedural techniques can be used to create realistic and adaptive movement
+The goal of this project is to demonstrate how procedural techniques can be used to create believable and adaptive movement.
 
 ## Introduction
 1) What is procedural animation, where/when is it used?
@@ -43,16 +42,39 @@ Procedural asset generation is a technique used in video games to generate game 
 
 ### Agent presentation
 
-ArakneAgent gameobject structure:
+The spider-like agent for this Unity project will be portrayed by a gameobject named *ArakneAgent* and having the following structure.
 
-* hierarchy
-* legPrefab -> IK
-* ArakneAI
+TODO: figura hierarchy (semplificata)
 
-From the inspector, the user can set the body size of the agent tuning the `bodyWidth` and the `bodyLength` variables.
-It is possible to choose the number of legs of the agent changing the `pairsOfLegs` variable (this can be changed also at run-time).
+Its main child gameobjects are:
 
-* MoveAgent
+* *BODY* : the parent Transform for most of the agent body parts, like:
+    * the model of the body
+    * *LEGS* : it is the container for the (custom amount of) instances of *ArakneLeg* prefab, created during the execution
+    * *LEG POLES* : it is generated during execution and contains the pole vectors for the legs IK system
+* *Main Camera* : the game camera, which will follow the agent while moving
+* *LEG TARGETS* : it is generated during execution and contains the legTarget objects that each legHandle follows when taking a step
+
+Two AI scripts are attached to the *ArakneAgent* gameobject:
+1. **ArakneAI** : the main AI component of our agent. It handles the procedural initialization of the model, as well as the run-time execution of the procedural animations and the obstacle avoidance for the body. 
+From the inspector, the user can set many parameters, like:
+    * `bodyWidth` and `bodyLength`, to set the body size of the agent
+    * `pairsOfLegs`, to decide the number of legs of the agent (can be changed at run-time)
+    * `handleDistance`: the distance of the leg tips from the body
+    * `poleDelta`: the offset for the legs pole vectors
+    * `bodyDefaultHeight` and `bodyCurrHeight`, to raise the body from the ground
+
+2. **MoveAgent** : the movement behavior that make our agent rotate and move towards the position of a given target position.
+From the inspector, the user can set the variables:
+
+    * `moveSpeed`: the maximum speed at which the agent should move towards its target
+    * `target`: the Transform that the agent should move towards
+    * `slowDistance`: the distance at which the agent should start slowing down towards its target
+    * `stopDistance`: the distance at which the agent should stop moving towards its target
+
+
+Each leg prefab *ArakneLeg* has a hierarchical structure from root bone to leaf bone.
+The leaf bone (named *"Leg_[chainLength-1]_end"*) of each leg has a **FabrIK** script that handles the position and rotation of the whole limb via an Inverse Kinematic solver.
 
 
 AI Design divided in subproblems:
@@ -167,6 +189,7 @@ Be careful to do it only if the relative *hasToMoveLeg* is false, beacause we do
 
 
 ### Generate a spider with n pairs of legs
+When the method TODO
 use params to decide
 find the correct step along spider body
 
@@ -218,9 +241,15 @@ Our custom script **MoveAgent** has several public variables that can be set in 
 The script also has a private variable, *currentSpeed*, which stores the current speed of the agent.
 Additionally, the boolean *isBlocked* is a flag controlled by ArakneAI and it is used to prevent the spider from moving when facing an insurmountable obstacle.
 
+TODO: figura
+
 Gizmos were used to make it easier to control the distances of the slowDownCircle (yellow) and the stopCircle (red).
 
 
+The implementation inside MoveAgent works in the following way.
+At first, after checking if a target is assigned, it calculates the distance from the target in the xz plane. If the square of the distance is less than the square of stopDistance, the currentSpeed is set to 0. If the square of the distance is less than the square of slowDistance, the currentSpeed is linearly interpolated between 0 and moveSpeed based on the ratio of the square of the current distance to the square of slowDistance. If the square of the distance is greater than the square of slowDistance, the currentSpeed is just set to moveSpeed.
+
+Then the agent's Transform is rotated with the transform.LookAt() method so it looks at the target's position. Finally, the agent is moved with transform.MoveTowards(), that translates it in the forward direction based on the currentSpeed.
 
 ### Creating enviroments where letting the spider move
 #### Environment 1: a Playground
@@ -266,17 +295,16 @@ TODO: figura lattice xz plane
 
 
 ### Adjust body height depending on legs average position
-TODO
+
+We want our agent to try to keep a fixed distance between the ground and its body (*bodyDefaultHeight*).
+This is possible in LateUpdate(). After updating each leg position with CheckLegHandle(), we evaluate the averageLegsHeight of all the legs by summing up every `legHandle[i].position.y` and then dividing the result by the number of legs.
+In this way we can use `averageLegsHeight + bodyDefaultHeight` as a candidate next position for our body.
 
 ### Adjust body height if an upcoming collision is detected**
-casi:
-- no collision
-- try below
-- try above
-- stop (possibili ampliamenti futuri: jump, climb, destroy, )
 
-This is an obstacle avoidance algorithm that is used to move the height of the agent's body when an obstacle is detected.
-The algorithm uses the Unity *Physics.CheckBox* function to check if there is an obstacle in the candidate next position of the spider's body. If there is no obstacle, the algorithm updates the last valid body position and returns the current body height.
+Before updating the final body position, we want to check if a collision is going to occur, so we can move the height of the agent's body accordingly.
+
+The obstacle avoidance algorithm uses the Unity *Physics.CheckBox* function to check if there is an obstacle in the candidate next position of the spider's body. If there is no obstacle, the algorithm updates the last valid body position and returns the current body height.
 If an obstacle is detected, the algorithm enters a loop that tries to find free space for the body to move by checking for space both above and below the current position. 
 
 The algorithm starts by trying to move the body below the current position and checks for free space in increments of 0.15 units along the vertical. If it finds a free space, it updates the last valid body position and returns the new body height.
@@ -296,7 +324,7 @@ It is also important to consider the maximum range of motion of the legs and to 
 
 It's important to notice that the algorithm is dependent on the level of complexity of the game and the obstacle detection method used, but with proper implementation, it can enhance the realism of the agent's movement and make the game more immersive.
 
-## Conclusions: limits and possible improvements
+## Conclusions and possible improvements
 
 In conclusion, the agent behavior presented in this project, although limited, could already be considered sufficient to be used in a video game. For example, it could be a believable robotic NPC that wanders within the game world. Of course, when dealing with an AI agent, some parameters may need to be manually set up on the specific needs, and some level design constraints must be considered.
 
