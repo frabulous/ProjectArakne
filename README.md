@@ -1,4 +1,8 @@
-# AI4VG - Project Documentation
+# Spider agent on uneven terrains
+
+**Artificial Intelligence for videogames**
+
+Francesco Bultrini - 970277
 
 ## Abstract
 
@@ -7,19 +11,23 @@ Two types of terrain will be tested: one generated procedurally using noise and 
 The goal of this project is to demonstrate how procedural techniques can be used to create believable and adaptive movement.
 
 ## Introduction
-### Procedural animations
-Procedural animation is a technique used in video games to generate animations on the fly, rather than pre-animating them. This allows for a greater degree of flexibility and realism in the game's animation system.
+
+Procedural animation is a branch of computer animation that is used for many purposes. In videogames, it is used to generate animations on the fly, rather than pre-animating them. This allows more flexibility and realism in the game's animation system.
 
 One common use of procedural animation is in the movement of characters and creatures. For example, in a game featuring a wide variety of enemy types, each with its own unique movement patterns, it would be impractical to pre-animate every possible movement for every enemy. Instead, a procedural animation system can be used to generate the animation for each enemy based on its movement patterns and physical properties.
 
-### Procedural assets
-Procedural asset generation is a technique used in video games to generate game assets, such as textures, models, and levels, on the fly, rather than pre-creating them. This allows for a greater degree of flexibility and variability in the game's content. With this technique, the game can generate unique and complex assets without the need of manual creation, saving time and resources.
+
+Procedural asset generation is used in video games to generate game assets, such as textures, models, and levels. It is used to reduce production time and space on disk, as well as to provide unique and complex assets without the need of manual creation.
+
+In this project, we will see all the steps to implementat in Unity a spider-like agent that is able to navigate through a 3D environment using procedural animation techniques. The agent's movement is based on the positioning of its legs in response to the terrain beneath it. To achieve this, we have combined the use of Inverse Kinematics (IK) and procedural generation techniques to create believable and adaptive movement. The agent's ability to move on uneven terrain was made possible by the implementation of a procedural ground that changes dynamically based on noise algorithms. In this report, we will provide an overview of the technical challenges faced during the development of the agent, and we will detail the methods used to overcome these challenges. The goal of this project is to demonstrate how procedural techniques can be used to create believable and adaptive movement in 3D environments, and to showcase the potential of IK and procedural generation in game development.
+
+<div class="page"/>
 
 ## Project Development
 
-### Agent presentation
+### Introducing our agent
 
-The spider-like agent for this Unity project will be portrayed by a gameobject named *ArakneAgent* and having the following structure.
+The spider-like agent for this Unity project will be portrayed by a gameobject named ***ArakneAgent*** and having the following structure:
 
 ![Agent hierarchy (simplified)](https://i.imgur.com/kp9ANR2.png)
 
@@ -34,7 +42,7 @@ Its main child gameobjects are:
 * *LEG TARGETS* : it is generated during execution and contains the legTarget objects that each legHandle follows when taking a step
 
 Two AI scripts are attached to the *ArakneAgent* gameobject:
-1. **ArakneAI** : the main AI component of our agent. It handles the procedural initialization of the model, as well as the run-time execution of the procedural animations and the obstacle avoidance for the body. 
+1. **`ArakneAI`** : the main AI component of our agent. It handles the procedural initialization of the model, as well as the run-time execution of the procedural animations and the obstacle avoidance for the body. 
 From the inspector, the user can set many parameters, like:
     * `bodyWidth` and `bodyLength`, to set the body size of the agent
     * `pairsOfLegs`, to decide the number of legs of the agent (can be changed at run-time)
@@ -42,7 +50,7 @@ From the inspector, the user can set many parameters, like:
     * `poleDelta`: the offset for the legs pole vectors
     * `bodyDefaultHeight` and `bodyCurrHeight`, to raise the body from the ground
 
-2. **MoveAgent** : the movement behavior that make our agent rotate and move towards the position of a given target position.
+2. **`MoveAgent`** : the movement behavior that make our agent rotate and move towards the position of a given target position.
 From the inspector, the user can set the variables:
 
     * `moveSpeed`: the maximum speed at which the agent should move towards its target
@@ -52,20 +60,14 @@ From the inspector, the user can set the variables:
 
 
 Each leg prefab *ArakneLeg* has a hierarchical structure from root bone to leaf bone.
-The leaf bone (named *"Leg_[chainLength-1]_end"*) of each leg has a **FabrIK** script that handles the position and rotation of the whole limb via an Inverse Kinematic solver.
+The leaf bone (named *"Leg_[chainLength-1]_end"*) of each leg has a **`FabrIK`** script that handles the position and rotation of the whole limb via an Inverse Kinematic solver.
 
 
-AI Design divided in subproblems:
+### Introduction to FK and IK
 
-### Introduction to Inverse Kinematics
+Forward Kinematics (FK) is the process of calculating the final position and orientation of an object or character's end effector, such as a hand or a foot, based on the position and orientation of its parent joints.
 
-Forward Kinematics (FK) and Inverse Kinematics (IK) are two techniques used in the animation of characters and objects in video games.
-
-Forward kinematics is the process of calculating the final position and orientation of an object or character's end effector, such as a hand or a foot, based on the position and orientation of its parent joints. This technique is mainly used to animate characters by applying the motion of the upper body to the lower body, or in other words, the motion of the parent joints to the end effectors.
-
-Inverse kinematics, on the other hand, is the process of determining the position and orientation of an object or character's joints in order to achieve a specific position and orientation of its end effectors. This technique is mainly used to animate characters by applying the motion of the end effectors to the parent joints, or in other words, the motion of the lower body to the upper body.
-
-In video game development, both techniques are used to animate characters and objects in real-time. Forward kinematics is often used for the animation of the upper body, such as the arms and the head, while inverse kinematics is used for the animation of the lower body, such as the legs and the feet. These techniques allow for more realistic and natural-looking animations, and can also be used to create advanced features such as foot planting, or to simulate the interaction of characters with the game environment.
+Inverse Kinematics (IK), on the other hand, takes the final position of the end effector and determins the position and orientation of its parent objects.
 
 ### Fabrik algorithm
 The FABRIK (*Forward And Backwards Reaching Inverse Kinematics*) algorithm is a popular method for solving IK in computer graphics and robotics. It uses an iterative algorithm that can handle chains of any length.
@@ -172,7 +174,7 @@ Be careful to do it only if the relative *hasToMoveLeg* is false, beacause we do
 
 
 
-### Generate a spider with n pairs of legs
+### Generate a spider with variable legs
 In order to generate the desired number of limbs, our ArakneAI handles the instantiation (and the destruction) on demand of the leg prefabs and all the others gameobjects associated, like legHandles, legPoles and legTargets.
 
 When the value of *pairsOfLegs* is changed by the user, the method `InitLegs()` is called. So the algorithm destroys all pre-existing gameobjects and resets the arrays that refer to legs. Then, new leg prefabs are instantiated. 
@@ -180,7 +182,7 @@ When the value of *pairsOfLegs* is changed by the user, the method `InitLegs()` 
 To find the correct position for the leg roots and place them evenly spaced along the body length, we compute the legGap. It is proportional to bodyLength/(pairsOfLegs-1).
 To place the leg tips in a circular shape, we compute a direction for each leg. This direction is obtained normalizing the vector with origin in the body center and pointing to the leg root position. So we use this direction scaled by *handleDistance* to position the legHandle; then we add the *poleDelta* vector to position the legPole.
 
-### Make the agent take a step in a believable way*
+### Make the agent take a step in a believable way
 At this point, it might already be enough to apply a translation to our agent, and we would see that, at some point, when the distance between the handles and the targets exceeds the stepGap value, each leg performs the step animation. However, the problem now is that all legs move simultaneously. 
 
 Instead, we would like a more realistic behavior. Legs should move in a cyclic sequence, and no leg should step if the opposite is already performing a step.
@@ -234,6 +236,7 @@ If no free space is found below the current position, the algorithm then tries t
 
 If no free space is found above or below the current position, the algorithm sets a flag that indicates that the spider is blocked and unable to avoid the obstacle, and returns the current body height. This flag can be used to prevent the spider from moving further and to trigger other actions such as playing an animation or a sound effect.
 
+<div class="page"/>
 
 ### Make the agent move
  
@@ -266,6 +269,7 @@ At first, after checking if a target is assigned, it calculates the distance fro
 
 Then the agent's Transform is rotated with the `transform.LookAt()` method so it looks at the target's position. Finally, the agent is moved with `transform.MoveTowards()`, that translates it in the forward direction based on the currentSpeed.
 
+<div class="page"/>
 
 ### Creating enviroments where letting the spider move
 #### **Environment 1: a Playground**
