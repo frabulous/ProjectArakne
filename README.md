@@ -43,8 +43,17 @@ Procedural asset generation is a technique used in video games to generate game 
 
 ### Agent presentation
 
-Dall'inspector, l'utente può regolare le dimensioni del corpo tramite i parametri bodyWidth e bodyLength.
-Può decidere il numero di zampe dell'agente regolando la variabile pairsOfLegs.
+ArakneAgent gameobject structure:
+
+* hierarchy
+* legPrefab -> IK
+* ArakneAI
+
+From the inspector, the user can set the body size of the agent tuning the `bodyWidth` and the `bodyLength` variables.
+It is possible to choose the number of legs of the agent changing the `pairsOfLegs` variable (this can be changed also at run-time).
+
+* MoveAgent
+
 
 AI Design divided in subproblems:
 ### Legs IK: personal implementation**
@@ -142,18 +151,26 @@ TODO: figura slide vs curve trajectory
 It should be noted that, in the event that too much distance has accumulated between the handle and the target, the step animation is accelerated; in extreme cases, the handle is instantly teleported into final position, to preserve the organicity of the model rather than the realism of the step.
 
 ### Make legs follow the surface
-Vogliamo fare in modo che, durante l'esecuzione, ogni zampa poggi a terra correttamente, seguendo la forma del terreno.
-Dunque definiamo in Unity un Layer chiamato Ground, che assegneremo ad ogni gameobject su cui vogliamo che il nostro agente possa poggiarsi. 
-Nel nostro script **ArakneAI** aggiungiamo quindi una LayerMask, chiamata *whatIsGround*, a cui andremo ad assegnare il layer Ground da Inspector. 
-Il nostro approccio sarà quello di fare un raycast dalla punta della zampa verso il basso, al fine di intercettare il terreno e posizionare la legHandle nel punto di collsione.
-TODO
-Aggiungiamo anche una variabile maxStepHeight per regolare il dislivello massimo che il nostro agente può gestire
+We want to ensure that, during execution, each leg touches the ground correctly, following the shape of the terrain. So, we define a Unity layer called "Ground": we will assign it to every gameobject on which we want our agent to be able to stand on. 
+Then, in our **ArakneAI** Script we add a LayerMask variable called *whatIsGround*, which we will set to "Ground" from the Inspector.
+
+At run-time, our approach will be to perform a raycast every frame starting from each legTarget position and pointing downwards, looking for some Collider belonging to the "Ground" layer. Then we place the legTarget at the collision point. So we ensure that every legTarget is grounded and it will be a valid next position for its relative legHandle.
+The only issue is that is that we cannot give for granted that such a raycast always hits the ground, since it may occur that the legTarget is below the terrain. The downwards raycast does not work in this case. We can't even cast a ray coming from the sky, since it may encounter floating obstacles above the ground.
+
+In order to do so, we need to slightly offset the origin of the raycast along the vertical axis by a custom value, which we can tune according to our level design. Therefore, we add a variable called *maxStepHeight* to our script for this purpose; we will use it to regulate the maximum altitude difference that our agent will be able to handle.
+
+TODO: img raycast legTargets
+
+Now, let's add an extra check since we want to ensure that not only the position at the next step is correct, but also the current position of each legHandle. This is because the ground that our agent is standing on may change in real-time under its feet.
+So, inside *CheckLegHandle()*, we can use the same raycast approach to find the closest point on the ground for each legHandle and put it in the correct position.
+Be careful to do it only if the relative *hasToMoveLeg* is false, beacause we do not want to stick the leg on the ground while performing the step animation.
+
 
 ### Generate a spider with n pairs of legs
 use params to decide
 find the correct step along spider body
 
-### Make the spider step in a believable way*
+### Make the agent take a step in a believable way*
 At this point, it might already be enough to apply a translation to our agent, and we would see that, at some point, when the distance between the handles and the targets exceeds the stepGap value, each leg performs the step animation. However, the problem now is that all legs move simultaneously. 
 
 Instead, we would like a more realistic behavior. Legs should move in a cyclic sequence, and no leg should step if the opposite is already performing a step.
@@ -183,7 +200,7 @@ We add this rule so that two legs in the same pair are not in the air at the sam
 Let's add a further check in our `CheckLegHandle()` method so that two legs in a row cannot be in the air at the same time. So, for each leg (excluding the front legs), we use *hasToMoveLegs* array to check the status of the leg in front; if that one is moving, the current one cannot.
 
 
-### Make the spider aim to a goal: simple movement behavior (seek + arriving)
+### Make the agent move
  
 So, we wanted to check out how our agent behaves when we let it roam around in the environment. Since it's mainly for testing, an easy approach is to use a kinematic algorithm like "arriving", which combines the simple "seek" behaviours.
 
@@ -191,12 +208,12 @@ The Seek algorithm is used to make an agent move towards a target position. It c
 
 The Arriving algorithm is similar to Seek, but it includes the concept of slowing down as the agent approaches the target. It calculates the distance between the agent and the target, and if this distance is less than a certain threshold, the agent's speed is scaled down proportionally to the distance. This creates a smooth slowing down effect as the agent approaches the target.
 
-Our custom script has several public variables that can be set in the Unity editor:
+Our custom script **MoveAgent** has several public variables that can be set in the Unity editor:
 
-- *moveSpeed*: the maximum speed at which the spider should move towards its target
-- *target*: the Transform of the object that the spider should move towards
-- *slowDistance*: the distance at which the spider should start slowing down towards its target
-- *stopDistance*: the distance at which the spider should stop moving towards its target
+- *moveSpeed*: the maximum speed at which the agent should move towards its target
+- *target*: the Transform that the agent should move towards
+- *slowDistance*: the distance at which the agent should start slowing down towards its target
+- *stopDistance*: the distance at which the agent should stop moving towards its target
 
 The script also has a private variable, *currentSpeed*, which stores the current speed of the agent.
 Additionally, the boolean *isBlocked* is a flag controlled by ArakneAI and it is used to prevent the spider from moving when facing an insurmountable obstacle.
@@ -207,14 +224,12 @@ Gizmos were used to make it easier to control the distances of the slowDownCircl
 
 ### Creating enviroments where letting the spider move
 #### Environment 1: a Playground
-*Un terreno pianeggiante costituito da un plane, a cui sono stati aggiunti dei modelli di varie forme, posizionati in modo tale da fungere da ostacoli, sia a terra che sospesi.
-Esempio: scala*
 
 A flat terrain consisting of a plane, to which 3d models of various shapes have been added; they are positioned in such a way as to serve as elevated spots or as obstacles (on the ground or suspended). 
 Example: ladder.
 
 The ground plane has a PlaneCollider component in order to be detected by raycasting, as well as any other model has a Collider matching to its mesh.
-These elements also are a specific Layer: *Ground*; it is used by the agent AI during the raycasting operations to distinguish ground objects from body parts.
+These elements also are put in a specific physics Layer: "Ground". It is used by the agent AI during the raycasting operations to distinguish ground objects from body parts.
 
 #### Environment 2: a Procedural, noise-based ground**
 For the second type of environment we are going to use noised-based terrain generation, that is a technique used in game development and other fields to procedurally create realistic and varied landscapes. The process makes use of mathematical noise functions - such as Perlin or Simplex noise - to generate a heightmap, which is then used to shape the terrain. This method allows for the creation of infinite, unique terrain with little manual input.
@@ -241,22 +256,19 @@ TODO: figura lattice xz plane
 * ScriptableObjects for Shape and Color
 * GroundEditor for custom editor
 * Noise: 
-  * Noise.cs (Simplex noise implementation)
+  * Noise.cs (Simplex noise implementation, based on [this paper by Stefan Gustavson](http://staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf))
   * NoiseSettings
   * NoiseTuner
   * ShapeGenerator
 
 
-
-
-##### Simple Noise from opensource
-
 ##### Handling procedural generation from Unity Inspector (Sebastian Lague variant)
 
 
-### Adjust body height depending on legs average
+### Adjust body height depending on legs average position
+TODO
 
-### Adjust body height if will collide**
+### Adjust body height if an upcoming collision is detected**
 casi:
 - no collision
 - try below
@@ -300,3 +312,4 @@ One possible solution is to expand our IK solving system so that it also uses ra
 ## References:
 
 * Millington, AI for videogames
+* [Simplex noise demystified, by Stefan Gustavson](http://staffwww.itn.liu.se/~stegu/simplexnoise/simplexnoise.pdf)

@@ -11,6 +11,7 @@ public class MoveAgent : MonoBehaviour
     public float slowDistance = 10f;
 
     public bool isBlocked;
+    public GameObject blockedFeedback;
 
     void Start()
     {
@@ -22,7 +23,15 @@ public class MoveAgent : MonoBehaviour
 
     void Update()
     {
-        if (isBlocked) return;
+        if (isBlocked) 
+        {
+            if(!blockedFeedback.activeSelf)
+                blockedFeedback.SetActive(true);
+
+            return;
+        }
+        if (blockedFeedback.activeSelf)
+            blockedFeedback.SetActive(false);
         
         //float speed = moveSpeed;
         if (target)

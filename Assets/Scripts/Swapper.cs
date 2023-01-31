@@ -2,23 +2,28 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class Swapper : MonoBehaviour
 {
-    [SerializeField] GameObject obj1, obj2;
+    [SerializeField] GameObject grnd1_play, grnd2_proc;
+    [SerializeField] GameObject proceduralGrndText;
+
     public void SwapObjects()
     {
-        if (!obj1 && !obj2) return;
+        if (!grnd1_play && !grnd2_proc) return;
         
-        if(obj1.activeSelf)
+        if(grnd1_play.activeSelf)
         {
-            obj1.SetActive(false);
-            obj2.SetActive(true);
+            grnd1_play.SetActive(false);
+            grnd2_proc.SetActive(true);
+            proceduralGrndText.SetActive(true);
         }
         else
         {
             //obj2.GetComponent<Ground>().OnDisable();
-            obj2.SetActive(false);
-            obj1.SetActive(true);
+            grnd2_proc.SetActive(false);
+            grnd1_play.SetActive(true);
+            proceduralGrndText.SetActive(false);
         }
     }
 }

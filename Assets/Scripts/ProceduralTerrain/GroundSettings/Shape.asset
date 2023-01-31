@@ -17,7 +17,7 @@ MonoBehaviour:
     strength: 10
     baseRoughness: 9.23
     roughness: 3.28
-    center: {x: 0, y: 0, z: 0}
-    numHarmonics: 3
+    center: {x: -8.9, y: -12.9, z: 0}
+    numHarmonics: 2
     decayRate: 0.14
     minValue: 0.3

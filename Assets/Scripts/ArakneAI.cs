@@ -10,28 +10,35 @@ public class ArakneAI : MonoBehaviour
 
     [SerializeField] private Transform bodyTransform, legsTransform;
     
-    [Space(10)]
-    [Header("[Setup]")]
-    [Space(10)]
-    [SerializeField][Range(0.1f,2.0f)] private float bodyWidth =.75f, bodyLength=.9f;
-    [SerializeField] private float handleDistance;
-    [SerializeField] private Vector3 poleDelta;
-    [SerializeField] private LayerMask whatIsGround;
-
     private const float MIN_bodyHeight = 1f, MAX_bodyHeight = 4f;
+    
+    [Space(10)]
+    [Header("- SETUP -")]
+    [Space(10)]
     [SerializeField][Range(MIN_bodyHeight, MAX_bodyHeight)] private float bodyDefaultHeight;
 
+    [SerializeField][Range(0.1f,2.0f)] private float bodyWidth =.75f, bodyLength=.9f;
+    /// <summary>
+    ///  It determins how far the legs are from the body
+    /// </summary>
+    [Tooltip("It determins how far the legs are from the body")]
+    [SerializeField] private float handleDistance;
+    /// <summary>
+    /// The offset of the leg IK pole vector
+    /// </summary>
+    [Tooltip("The offset of the leg IK pole vector")]
+    [SerializeField] private Vector3 poleDelta;
+
     [Space(10)]
-    [Header("[Run-time]")]
+    [Header("- RUN-TIME settings -")]
     [Space(10)]
 
-    [Header("[Number of pairs of legs]")]
-    [SerializeField][Range(1,6)] private int pairsOfLegs;
-
     [Space(10)]
-
-    [Header("[Other Settings]")]
-    
+    /// <summary>
+    ///  Half the number of legs
+    /// </summary>
+    [Tooltip("Half the number of legs")]
+    [SerializeField][Range(1,6)] private int pairsOfLegs;    
     [Space(10)]
 
     [SerializeField][Range(MIN_bodyHeight, MAX_bodyHeight)] private float bodyCurrHeight;
@@ -52,6 +59,7 @@ public class ArakneAI : MonoBehaviour
     /// </summary>
     [Tooltip("The step animation speed")]
     [SerializeField] private float legSpeed = 20f;
+    [SerializeField] private LayerMask whatIsGround;
 
     private float averageLegsHeight;
     private Vector3 averageLegsPos;
@@ -160,13 +168,15 @@ public class ArakneAI : MonoBehaviour
             for (int i=0; i < legObjs.Length; i++)
             {
                 if(legObjs[i]) Destroy(legObjs[i]);
-                if(legPoles[i]) Destroy(legPoles[i].gameObject);
+                //if(legPoles[i]) Destroy(legPoles[i].gameObject);
             }
         
         if (handlesContainer!=null)
             Destroy(handlesContainer.gameObject);
         if (legTargets!=null)
             Destroy(legTargets[0].parent.gameObject);
+        if (legPoles!=null)
+            Destroy(legPoles[0].parent.gameObject);
         
 
         hasToMoveLegs = new bool[pairsOfLegs*2];
@@ -182,17 +192,20 @@ public class ArakneAI : MonoBehaviour
         Transform handlesTargetsContainer = new GameObject("LEG TARGETS").transform;
         handlesTargetsContainer.SetParent(this.transform, false);
 
+        Transform polesContainer = new GameObject("LEG POLES").transform;
+        polesContainer.SetParent(bodyTransform, false);
+
         for (var i=0; i < 2*pairsOfLegs; i++)
         {
             legObjs[i] = Instantiate(legPrefab, legsTransform);
             legHandles[i] = Instantiate(handlePrefab, handlesContainer).transform;
-            legPoles[i] = Instantiate(polePrefab, bodyTransform).transform;
+            legPoles[i] = Instantiate(polePrefab, polesContainer).transform;
             legTargets[i] = Instantiate(targetPrefab, handlesTargetsContainer).transform;
 
-            legObjs[i].name += " N" + i;
-            legHandles[i].name += " N" + i;
-            legPoles[i].name += " N" + i;
-            legTargets[i].name += " N" + i;
+            legObjs[i].name += " n" + i;
+            legHandles[i].name += " n" + i;
+            legPoles[i].name += " n" + i;
+            legTargets[i].name += " n" + i;
         }
         
         float legGap = 0f;
@@ -249,9 +262,14 @@ public class ArakneAI : MonoBehaviour
         for (var i = 0; i < pairsOfLegs; i++)
         {
             legTargets[i].Translate(deltaZ, Space.Self);
-            legTargets[2*pairsOfLegs-1 - i].Translate(deltaZ, Space.Self); //TODO: test
 
             deltaZ *= -1;
+            //int oppositeIndex = 2*pairsOfLegs-1 - i; //diagonally opposite
+            int oppositeIndex = i < pairsOfLegs ? i+pairsOfLegs : i-pairsOfLegs;
+            
+            legTargets[oppositeIndex].Translate(deltaZ, Space.Self);
+
+            //deltaZ *= -1;
         }
     }
     void CheckLegTarget(int i)
@@ -494,7 +512,7 @@ public class ArakneAI : MonoBehaviour
                 //Gizmos.DrawWireCube(pos - new Vector3(2*(bodyWidth+handleDistance),0,0), Vector3.one*.2f); // left handle
                 
                 Gizmos.DrawWireSphere(pos + dir + poleDelta, .2f); // right pole
-                Gizmos.DrawWireSphere(pos - new Vector3(2*(bodyWidth+handleDistance+poleDelta.x), 0,0), .2f); // left pole
+                Gizmos.DrawWireSphere(pos - dir + new Vector3(-poleDelta.x,poleDelta.y,poleDelta.z), .2f); // left pole
             }
         }
 
