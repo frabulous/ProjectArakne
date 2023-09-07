@@ -2,7 +2,7 @@
 
 **Artificial Intelligence for videogames**
 
-Francesco Bultrini - 970277
+Francesco Bultrini
 
 ## Abstract
 
